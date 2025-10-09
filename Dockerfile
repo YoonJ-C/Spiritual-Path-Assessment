@@ -6,7 +6,9 @@ WORKDIR /app
 
 # Copy project files
 COPY example.py /app/
-COPY index.html /app/templates/index.html
+COPY templates/ /app/templates/
+
+
 
 # Copy your dependency file if it exists (optional)
 # If not, we’ll create one on the fly

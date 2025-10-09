@@ -11,7 +11,8 @@ import json
 import os
 import warnings
 from dotenv import load_dotenv
-from together import Together
+import together
+
 
 warnings.filterwarnings("ignore")
 load_dotenv()
@@ -24,7 +25,9 @@ USERS_FILE = 'users_data.json'
 
 # Together API for chatbot
 TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY")
-client = Together(api_key=TOGETHER_API_KEY) if TOGETHER_API_KEY else None
+together.api_key = TOGETHER_API_KEY
+client = together if TOGETHER_API_KEY else None
+
 
 # Assessment Questions
 QUESTIONS = [
@@ -324,14 +327,16 @@ Rules: Keep 30-50 words, be respectful, use * for bullet points (format: "Text: 
     
     try:
         # Call Together API with limited tokens for concise responses
-        response = client.chat.completions.create(
-            model="meta-llama/Meta-Llama-3-8B-Instruct-Lite",
-            messages=messages,
-            max_tokens=80,  # Roughly 50-60 words maximum
-            temperature=0.7,
-        )
+            response = together.chat.completions.create(
+                model="meta-llama/Meta-Llama-3-8B-Instruct-Lite",
+                messages=messages,
+                max_tokens=80,
+                temperature=0.7,
+            )
+
         
-        bot_response = response.choices[0].message.content
+        bot_response = response.output[0].content[0].text
+
         
         return jsonify({
             "success": True,

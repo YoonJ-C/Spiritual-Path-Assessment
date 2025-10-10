@@ -1,28 +1,21 @@
-# Use the official lightweight Python image
-FROM python:3.10-slim
+FROM python:3.9
 
-# Set working directory
+RUN useradd -m -u 1000 user
+USER user
+ENV PATH="/home/user/.local/bin:$PATH"
+
 WORKDIR /app
 
-# Copy project files
-COPY example.py /app/
-COPY templates/ /app/templates/
+COPY --chown=user ./requirements.txt requirements.txt
+RUN pip install --no-cache-dir --upgrade -r requirements.txt
 
+COPY --chown=user . /app
 
+# Install Flask
+RUN pip install flask gunicorn pymupdf tiktoken
 
-# Copy your dependency file if it exists (optional)
-# If not, we’ll create one on the fly
-RUN echo "Flask==3.0.3\npython-dotenv\nTogether==0.2.8" > requirements.txt
-
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Expose port 7860 (required by Hugging Face Spaces)
+# Expose default port
 EXPOSE 7860
 
-# Set environment variables
-ENV PORT=7860
-ENV PYTHONUNBUFFERED=1
-
-# Start the Flask app
-CMD ["python", "example.py"]
+# Run with Gunicorn
+CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:7860", "app:app"]

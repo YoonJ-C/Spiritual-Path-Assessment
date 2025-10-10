@@ -8,7 +8,7 @@ import json
 import os
 import warnings
 from dotenv import load_dotenv
-import together  # Updated import
+import together
 
 warnings.filterwarnings("ignore")
 load_dotenv()
@@ -26,12 +26,164 @@ client = together if TOGETHER_API_KEY else None
 
 # Assessment Questions
 QUESTIONS = [
-    # ... keep all your questions exactly as before ...
+    {
+        "id": 1,
+        "question": "What is your view on the existence of God or a higher power?",
+        "options": {
+            "One supreme God": {"Christianity": 3, "Islam": 3, "Judaism": 3, "Sikhism": 3},
+            "Multiple gods": {"Hinduism": 3, "Ancient Greek": 3, "Norse": 3},
+            "Spiritual force/energy": {"Buddhism": 2, "Taoism": 3, "New Age": 3},
+            "Uncertain/Agnostic": {"Secular Humanism": 3, "Buddhism": 1},
+            "No God (Atheist)": {"Secular Humanism": 3}
+        }
+    },
+    {
+        "id": 2,
+        "question": "How do you prefer to connect with the divine or spiritual realm?",
+        "options": {
+            "Organized worship services": {"Christianity": 3, "Islam": 3, "Judaism": 3},
+            "Personal meditation": {"Buddhism": 3, "Hinduism": 2, "New Age": 2},
+            "Nature and environment": {"Taoism": 3, "Wicca": 3, "Indigenous": 3},
+            "Study and reflection": {"Judaism": 2, "Secular Humanism": 3},
+            "No spiritual practice": {"Secular Humanism": 3}
+        }
+    },
+    {
+        "id": 3,
+        "question": "What role should religious texts play in your life?",
+        "options": {
+            "Central authority": {"Islam": 3, "Christianity": 3, "Judaism": 3},
+            "Guidance but not absolute": {"Hinduism": 2, "Buddhism": 2, "Sikhism": 2},
+            "Philosophical insights": {"Taoism": 2, "Buddhism": 2, "Confucianism": 3},
+            "Not important": {"Secular Humanism": 3, "New Age": 1}
+        }
+    },
+    {
+        "id": 4,
+        "question": "What happens after death?",
+        "options": {
+            "Heaven or Hell": {"Christianity": 3, "Islam": 3},
+            "Reincarnation": {"Hinduism": 3, "Buddhism": 3, "Sikhism": 2},
+            "Merge with the universe": {"Taoism": 3, "New Age": 2},
+            "Nothing/End of consciousness": {"Secular Humanism": 3},
+            "Unknown": {"Secular Humanism": 1, "Buddhism": 1}
+        }
+    },
+    {
+        "id": 5,
+        "question": "How important is community in your spiritual life?",
+        "options": {
+            "Very important": {"Christianity": 3, "Islam": 3, "Judaism": 3, "Sikhism": 3},
+            "Somewhat important": {"Hinduism": 2, "Buddhism": 2, "Wicca": 2},
+            "Not very important": {"Taoism": 2, "New Age": 2},
+            "Prefer solitary practice": {"Buddhism": 1, "New Age": 2}
+        }
+    },
+    {
+        "id": 6,
+        "question": "What is the purpose of life?",
+        "options": {
+            "Serve God": {"Christianity": 3, "Islam": 3, "Judaism": 3},
+            "Achieve enlightenment": {"Buddhism": 3, "Hinduism": 3},
+            "Live in harmony": {"Taoism": 3, "Confucianism": 3, "Indigenous": 3},
+            "Help humanity": {"Secular Humanism": 3, "Sikhism": 2},
+            "Personal fulfillment": {"New Age": 3, "Secular Humanism": 2}
+        }
+    },
+    {
+        "id": 7,
+        "question": "How do you view suffering?",
+        "options": {
+            "Test from God": {"Christianity": 3, "Islam": 3, "Judaism": 2},
+            "Result of attachment": {"Buddhism": 3},
+            "Natural part of life": {"Taoism": 3, "Stoicism": 3, "Secular Humanism": 2},
+            "Karma from past actions": {"Hinduism": 3, "Buddhism": 2, "Sikhism": 2}
+        }
+    },
+    {
+        "id": 8,
+        "question": "What is your stance on ritual and ceremony?",
+        "options": {
+            "Essential": {"Hinduism": 3, "Judaism": 3, "Wicca": 3},
+            "Important but flexible": {"Christianity": 2, "Islam": 2, "Buddhism": 2},
+            "Optional": {"New Age": 2, "Taoism": 2},
+            "Unnecessary": {"Secular Humanism": 3}
+        }
+    }
 ]
 
 # Religion Descriptions
 RELIGIONS = {
-    # ... keep all your religions exactly as before ...
+    "Christianity": {
+        "name": "Christianity",
+        "description": "Based on the life and teachings of Jesus Christ, emphasizing love, forgiveness, and salvation through faith.",
+        "core_beliefs": "Trinity (Father, Son, Holy Spirit), Salvation through Jesus, Bible as sacred text",
+        "practices": "Church attendance, prayer, sacraments, Bible study",
+        "resources": ["Bible", "Local churches", "Christian counseling", "Bible.com"]
+    },
+    "Islam": {
+        "name": "Islam",
+        "description": "Monotheistic faith revealed to Prophet Muhammad, emphasizing submission to Allah's will.",
+        "core_beliefs": "Five Pillars, Quran as final revelation, Prophet Muhammad, One God (Allah)",
+        "practices": "Five daily prayers, fasting during Ramadan, charity, pilgrimage to Mecca",
+        "resources": ["Quran", "Local mosques", "Islamic centers", "Quran.com"]
+    },
+    "Buddhism": {
+        "name": "Buddhism",
+        "description": "Path to enlightenment through understanding the nature of suffering and following the Eightfold Path.",
+        "core_beliefs": "Four Noble Truths, Eightfold Path, Karma, Reincarnation, No eternal soul",
+        "practices": "Meditation, mindfulness, following precepts, studying dharma",
+        "resources": ["Buddhist temples", "Meditation centers", "AccessToInsight.org"]
+    },
+    "Hinduism": {
+        "name": "Hinduism",
+        "description": "Ancient tradition with diverse beliefs, emphasizing dharma, karma, and moksha (liberation).",
+        "core_beliefs": "Brahman (ultimate reality), Karma, Reincarnation, Multiple paths to divine",
+        "practices": "Puja (worship), yoga, meditation, festivals, pilgrimages",
+        "resources": ["Bhagavad Gita", "Hindu temples", "Yoga centers"]
+    },
+    "Judaism": {
+        "name": "Judaism",
+        "description": "Covenant relationship between God and the Jewish people, emphasizing Torah study and ethical living.",
+        "core_beliefs": "One God, Chosen people, Torah, Messiah to come, Ethical monotheism",
+        "practices": "Sabbath observance, kashrut (dietary laws), prayer, Torah study",
+        "resources": ["Torah", "Synagogues", "Jewish community centers"]
+    },
+    "Sikhism": {
+        "name": "Sikhism",
+        "description": "Monotheistic faith founded by Guru Nanak, emphasizing equality, service, and devotion to one God.",
+        "core_beliefs": "One God, Equality of all people, Karma and reincarnation, Guru Granth Sahib",
+        "practices": "Prayer, meditation on God's name, service (seva), honest living",
+        "resources": ["Guru Granth Sahib", "Gurdwaras", "Sikh community organizations"]
+    },
+    "Taoism": {
+        "name": "Taoism",
+        "description": "Chinese philosophy emphasizing living in harmony with the Tao (the Way), natural flow of the universe.",
+        "core_beliefs": "The Tao, Wu wei (effortless action), Yin and yang, Natural harmony",
+        "practices": "Meditation, Tai Chi, Qigong, simplicity, nature connection",
+        "resources": ["Tao Te Ching", "Taoist temples", "Tai Chi classes"]
+    },
+    "Secular Humanism": {
+        "name": "Secular Humanism",
+        "description": "Non-religious philosophy emphasizing reason, ethics, human welfare without supernatural beliefs.",
+        "core_beliefs": "Human reason, Scientific method, Ethical living without religion, Human dignity",
+        "practices": "Critical thinking, ethical action, community service, rational inquiry",
+        "resources": ["Humanist organizations", "Secular communities", "Philosophy books"]
+    },
+    "New Age": {
+        "name": "New Age Spirituality",
+        "description": "Modern spiritual movement combining various traditions, emphasizing personal growth and consciousness.",
+        "core_beliefs": "Universal energy, Personal transformation, Interconnectedness, Alternative healing",
+        "practices": "Meditation, crystal healing, astrology, energy work, holistic wellness",
+        "resources": ["Spiritual centers", "Wellness workshops", "Metaphysical bookstores"]
+    },
+    "Wicca": {
+        "name": "Wicca",
+        "description": "Modern pagan religion honoring nature, practicing ritual magic, and worshipping the Goddess and God.",
+        "core_beliefs": "Nature reverence, Magic, Goddess and God, Harm none, Wheel of the Year",
+        "practices": "Seasonal rituals, spell work, moon celebrations, nature worship",
+        "resources": ["Wiccan covens", "Pagan gatherings", "Nature-based spirituality books"]
+    }
 }
 
 def load_users():
@@ -62,8 +214,107 @@ def calculate_results(answers):
             recommendations.append(religion_info)
     return recommendations
 
-# --- Flask routes (login, signup, home, logout, assessment routes) ---
-# Keep all your existing routes unchanged
+# Routes
+@app.route("/")
+def index():
+    if 'username' in session:
+        return redirect(url_for('home'))
+    return render_template("login.html")
+
+@app.route("/signup")
+def signup_page():
+    return render_template("signup.html")
+
+@app.route("/home")
+def home():
+    if 'username' not in session:
+        return redirect(url_for('index'))
+    users = load_users()
+    user_data = users.get(session['username'], {})
+    return render_template("home.html", username=session['username'], user_data=user_data)
+
+@app.route("/assessment")
+def assessment():
+    if 'username' not in session:
+        return redirect(url_for('index'))
+    return render_template("assessment.html", questions=QUESTIONS)
+
+@app.route("/results")
+def results():
+    if 'username' not in session:
+        return redirect(url_for('index'))
+    users = load_users()
+    user_data = users.get(session['username'], {})
+    recommendations = user_data.get('recommendations', [])
+    return render_template("results.html", recommendations=recommendations)
+
+@app.route("/login", methods=["POST"])
+def login():
+    data = request.json
+    username = data.get('username', '').strip()
+    password = data.get('password', '').strip()
+    
+    if not username or not password:
+        return jsonify({"success": False, "message": "Username and password required"})
+    
+    users = load_users()
+    if username in users and users[username].get('password') == password:
+        session['username'] = username
+        return jsonify({"success": True, "message": "Login successful"})
+    
+    return jsonify({"success": False, "message": "Invalid credentials"})
+
+@app.route("/signup_submit", methods=["POST"])
+def signup_submit():
+    data = request.json
+    username = data.get('username', '').strip()
+    email = data.get('email', '').strip()
+    password = data.get('password', '').strip()
+    
+    if not username or not email or not password:
+        return jsonify({"success": False, "message": "All fields required"})
+    
+    users = load_users()
+    if username in users:
+        return jsonify({"success": False, "message": "Username already exists"})
+    
+    users[username] = {
+        "email": email,
+        "password": password,
+        "answers": [],
+        "recommendations": []
+    }
+    save_users(users)
+    session['username'] = username
+    return jsonify({"success": True, "message": "Account created successfully"})
+
+@app.route("/submit_assessment", methods=["POST"])
+def submit_assessment():
+    if 'username' not in session:
+        return jsonify({"success": False, "message": "Not logged in"})
+    
+    data = request.json
+    answers = data.get('answers', [])
+    
+    if not answers:
+        return jsonify({"success": False, "message": "No answers provided"})
+    
+    users = load_users()
+    username = session['username']
+    
+    if username in users:
+        users[username]['answers'] = answers
+        recommendations = calculate_results(answers)
+        users[username]['recommendations'] = recommendations
+        save_users(users)
+        return jsonify({"success": True, "recommendations": recommendations})
+    
+    return jsonify({"success": False, "message": "User not found"})
+
+@app.route("/logout")
+def logout():
+    session.pop('username', None)
+    return redirect(url_for('index'))
 
 @app.route("/chat", methods=["POST"])
 def chat():
@@ -109,7 +360,7 @@ Rules: Keep 30-50 words, be respectful, use * for bullet points (format: "Text: 
             temperature=0.7,
         )
 
-        bot_response = response.output[0].content[0].text  # ✅ Correctly indented
+        bot_response = response.output[0].content[0].text
         return jsonify({
             "success": True,
             "response": bot_response
@@ -122,4 +373,4 @@ Rules: Keep 30-50 words, be respectful, use * for bullet points (format: "Text: 
         })
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5001)
+    app.run(debug=True, host="0.0.0.0", port=7860)

@@ -1,0 +1,16 @@
+{
+    "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}/.venv/lib/python3.13/site-packages"
+    ],
+    "cSpell.words": [
+        "dotenv",
+        "werkzeug",
+        "puja",
+        "moksha",
+        "venv",
+        "pycache",
+        "signup",
+        "yoon"
+    ]
+}

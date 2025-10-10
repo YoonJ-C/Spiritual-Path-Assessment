@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ title if logged_in else 'Spiritual Path Finder - Login' }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        {% if not logged_in %}
+            <!-- Login/Signup Form -->
+            <h1><span class="icon">🌟</span>Spiritual Path Finder</h1>
+            <p>{{ 'Begin your journey of self-discovery' if is_signup else 'Welcome back, seeker!' }}</p>
+            
+            <div class="auth-form">
+                <input type="text" id="authUsername" placeholder="Username">
+                <input type="password" id="authPassword" placeholder="Password">
+                <button onclick="authenticate()">{{ 'Sign Up' if is_signup else 'Sign In' }}</button>
+                <div id="result"></div>
+                <p class="switch-link" onclick="switchAuth()">
+                    {{ 'Already have an account? Sign In' if is_signup else 'New here? Sign Up' }}
+                </p>
+            </div>
+        {% else %}
+            <!-- Assessment Interface -->
+            <h1>{{ title }}</h1>
+            <p>{{ message }}</p>
+            
+            {% if not has_results %}
+                <p class="subtitle">
+                    Discover which spiritual or religious path aligns with your beliefs, values, and lifestyle. 
+                    Answer 8 thoughtful questions about your worldview.
+                </p>
+                
+                <div class="question-counter" id="questionCounter">Question 1 of {{ questions|length }}</div>
+                
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressBar" style="width: 0%"></div>
+                </div>
+                
+                <div style="display:none;" id="assessmentData" 
+                     data-total="{{ questions|length }}" 
+                     data-ids="{{ questions|map(attribute='id')|list|tojson|safe }}">
+                </div>
+                
+                <form id="assessmentForm">
+                    {% for question in questions %}
+                    {% set q_index = loop.index %}
+                    <div class="question-block" data-question-index="{{ q_index }}" {% if loop.first %}data-active="true"{% endif %}>
+                        <h4>
+                            <span class="question-number">{{ q_index }}</span>
+                            {{ question.question }}
+                        </h4>
+                        {% for option in question.options.keys() %}
+                        <label class="option">
+                            <input type="radio" 
+                                   name="q{{ question.id }}" 
+                                   value="{{ option }}"
+                                   data-question-index="{{ q_index }}"
+                                   onchange="handleAnswer(this)">
+                            {{ option }}
+                        </label>
+                        {% endfor %}
+                        
+                        <div class="nav-buttons" style="justify-content: flex-end;">
+                            <button type="button" class="nav-btn next" id="nextBtn{{ q_index }}" onclick="goToNext()" disabled>
+                                Next →
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    
+                    <button type="button" class="submit-btn" onclick="submitAssessment()" id="submitBtn" style="display: none;">
+                        ✨ Discover Your Path
+                    </button>
+                </form>
+                
+                <div id="errorMsg"></div>
+            {% else %}
+                <!-- Results Display -->
+                <p class="subtitle">
+                    Based on your responses, here are the spiritual paths that align most closely with your values and beliefs:
+                </p>
+                
+                <div id="resultsContainer">
+                    {% for result in results %}
+                    <div class="result-card rank-{{ loop.index }}">
+                        <div class="result-header">
+                            <div class="result-rank">{{ loop.index }}</div>
+                            <div class="result-title">
+                                <h3>{{ result.name }}</h3>
+                            </div>
+                            <div class="result-percentage">{{ result.percentage }}%</div>
+                        </div>
+                        <p class="result-description">{{ result.description }}</p>
+                        <div class="result-details">
+                            <h5>📿 Common Practices:</h5>
+                            <p>{{ result.practices }}</p>
+                            <h5>💭 Core Beliefs:</h5>
+                            <p>{{ result.core_beliefs }}</p>
+                        </div>
+                        
+                        <button class="chat-toggle-btn" onclick="toggleChat('{{ result.name }}')">
+                            💬 Ask Questions About {{ result.name }}
+                        </button>
+                        
+                        <div class="chat-window" id="chat-{{ result.name|replace(' ', '-') }}">
+                            <div class="chat-messages" id="messages-{{ result.name|replace(' ', '-') }}">
+                                <div class="chat-message bot">
+                                    Hi! Ask me anything about {{ result.name }}.<br>
+                                    <span style="color:#7C3AED; font-size:13px;">
+                                        Example: "What are the daily practices?"<br>
+                                        Example: "How do I get started with this path?"
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="chat-input-area">
+                                <input type="text" 
+                                       class="chat-input" 
+                                       id="input-{{ result.name|replace(' ', '-') }}"
+                                       placeholder="Ask about {{ result.name }}..."
+                                       onkeypress="if(event.key==='Enter') sendMessage('{{ result.name }}')">
+                                <button class="chat-send-btn" 
+                                        id="send-{{ result.name|replace(' ', '-') }}"
+                                        onclick="sendMessage('{{ result.name }}')">
+                                    Send
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="buttons-row">
+                    <button class="btn reset-btn" onclick="resetAssessment()">🔄 Retake Assessment</button>
+                </div>
+            {% endif %}
+            
+            <div style="text-align: center;">
+                <a href="/logout" class="btn logout-btn">Logout</a>
+            </div>
+        {% endif %}
+    </div>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

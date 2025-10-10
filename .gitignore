@@ -1,0 +1,62 @@
+# User Data - DO NOT UPLOAD TO GITHUB
+users_data.json
+
+# Environment Variables - Contains API Keys
+.env
+
+# Python Virtual Environment
+.venv/
+venv/
+env/
+ENV/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Flask
+instance/
+.webassets-cache
+
+# IDE/Editor
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+# Keep .vscode/settings.json for proper IDE configuration
+!.vscode/
+!.vscode/settings.json
+
+# Logs
+*.log
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Other
+*.bak
+*.tmp
+

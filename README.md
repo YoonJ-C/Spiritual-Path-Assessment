@@ -29,7 +29,7 @@ TOGETHER_API_KEY=your_actual_key_here
 
 #### 3. Run the Application
 ```bash
-python example.py
+python app.py
 ```
 
 #### 4. Open in Browser

@@ -1,5 +1,3 @@
-# Task 10 - Flask + HTML Integration
-
 ## 🌟 Spiritual Path Finder with AI Chatbot
 
 An interactive web application that helps users discover which religious or spiritual path aligns with their beliefs, values, and lifestyle through an 8-question assessment. Features real-time AI chatbot assistance for each recommended path.

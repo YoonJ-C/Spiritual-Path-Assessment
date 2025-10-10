@@ -217,71 +217,79 @@ def calculate_results(answers):
 # Routes
 @app.route("/")
 def index():
-    return render_template("index.html")
-
-@app.route("/get_questions", methods=["GET"])
-def get_questions():
-    return jsonify({"questions": QUESTIONS})
-
-@app.route("/get_user_data", methods=["GET"])
-def get_user_data():
-    if 'username' not in session:
-        return jsonify({"success": False, "message": "Not logged in"})
-    
-    users = load_users()
-    user_data = users.get(session['username'], {})
-    return jsonify({
-        "success": True,
-        "username": session['username'],
-        "recommendations": user_data.get('recommendations', []),
-        "answers": user_data.get('answers', [])
-    })
-
-@app.route("/check_session", methods=["GET"])
-def check_session():
+    # Check if user is logged in
     if 'username' in session:
-        return jsonify({"logged_in": True, "username": session['username']})
-    return jsonify({"logged_in": False})
+        users = load_users()
+        user_data = users.get(session['username'], {})
+        has_results = len(user_data.get('recommendations', [])) > 0
+        
+        return render_template("index.html",
+            logged_in=True,
+            username=session['username'],
+            title="🌟 Your Spiritual Journey" if has_results else "🌟 Spiritual Path Assessment",
+            message="Explore your personalized results" if has_results else "Discover your path",
+            has_results=has_results,
+            questions=QUESTIONS,
+            results=user_data.get('recommendations', [])
+        )
+    
+    # Not logged in - show login page
+    return render_template("index.html",
+        logged_in=False,
+        is_signup=False
+    )
 
-@app.route("/login", methods=["POST"])
+@app.route("/login", methods=["GET", "POST"])
 def login():
-    data = request.json
-    username = data.get('username', '').strip()
-    password = data.get('password', '').strip()
+    if request.method == "POST":
+        data = request.json
+        username = data.get('username', '').strip()
+        password = data.get('password', '').strip()
+        
+        if not username or not password:
+            return jsonify({"success": False, "message": "Username and password required"})
+        
+        users = load_users()
+        if username in users and users[username].get('password') == password:
+            session['username'] = username
+            return jsonify({"success": True, "message": "Login successful"})
+        
+        return jsonify({"success": False, "message": "Invalid credentials"})
     
-    if not username or not password:
-        return jsonify({"success": False, "message": "Username and password required"})
-    
-    users = load_users()
-    if username in users and users[username].get('password') == password:
-        session['username'] = username
-        return jsonify({"success": True, "message": "Login successful"})
-    
-    return jsonify({"success": False, "message": "Invalid credentials"})
+    # GET request - show login page
+    return render_template("index.html",
+        logged_in=False,
+        is_signup=False
+    )
 
-@app.route("/signup_submit", methods=["POST"])
-def signup_submit():
-    data = request.json
-    username = data.get('username', '').strip()
-    email = data.get('email', '').strip()
-    password = data.get('password', '').strip()
+@app.route("/signup", methods=["GET", "POST"])
+def signup():
+    if request.method == "POST":
+        data = request.json
+        username = data.get('username', '').strip()
+        password = data.get('password', '').strip()
+        
+        if not username or not password:
+            return jsonify({"success": False, "message": "All fields required"})
+        
+        users = load_users()
+        if username in users:
+            return jsonify({"success": False, "message": "Username already exists"})
+        
+        users[username] = {
+            "password": password,
+            "answers": [],
+            "recommendations": []
+        }
+        save_users(users)
+        session['username'] = username
+        return jsonify({"success": True, "message": "Account created successfully"})
     
-    if not username or not email or not password:
-        return jsonify({"success": False, "message": "All fields required"})
-    
-    users = load_users()
-    if username in users:
-        return jsonify({"success": False, "message": "Username already exists"})
-    
-    users[username] = {
-        "email": email,
-        "password": password,
-        "answers": [],
-        "recommendations": []
-    }
-    save_users(users)
-    session['username'] = username
-    return jsonify({"success": True, "message": "Account created successfully"})
+    # GET request - show signup page
+    return render_template("index.html",
+        logged_in=False,
+        is_signup=True
+    )
 
 @app.route("/submit_assessment", methods=["POST"])
 def submit_assessment():
@@ -303,6 +311,22 @@ def submit_assessment():
         users[username]['recommendations'] = recommendations
         save_users(users)
         return jsonify({"success": True, "recommendations": recommendations})
+    
+    return jsonify({"success": False, "message": "User not found"})
+
+@app.route("/reset_assessment", methods=["POST"])
+def reset_assessment():
+    if 'username' not in session:
+        return jsonify({"success": False, "message": "Not logged in"})
+    
+    users = load_users()
+    username = session['username']
+    
+    if username in users:
+        users[username]['answers'] = []
+        users[username]['recommendations'] = []
+        save_users(users)
+        return jsonify({"success": True})
     
     return jsonify({"success": False, "message": "User not found"})
 

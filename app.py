@@ -217,36 +217,31 @@ def calculate_results(answers):
 # Routes
 @app.route("/")
 def index():
+    return render_template("index.html")
+
+@app.route("/get_questions", methods=["GET"])
+def get_questions():
+    return jsonify({"questions": QUESTIONS})
+
+@app.route("/get_user_data", methods=["GET"])
+def get_user_data():
+    if 'username' not in session:
+        return jsonify({"success": False, "message": "Not logged in"})
+    
+    users = load_users()
+    user_data = users.get(session['username'], {})
+    return jsonify({
+        "success": True,
+        "username": session['username'],
+        "recommendations": user_data.get('recommendations', []),
+        "answers": user_data.get('answers', [])
+    })
+
+@app.route("/check_session", methods=["GET"])
+def check_session():
     if 'username' in session:
-        return redirect(url_for('home'))
-    return render_template("login.html")
-
-@app.route("/signup")
-def signup_page():
-    return render_template("signup.html")
-
-@app.route("/home")
-def home():
-    if 'username' not in session:
-        return redirect(url_for('index'))
-    users = load_users()
-    user_data = users.get(session['username'], {})
-    return render_template("home.html", username=session['username'], user_data=user_data)
-
-@app.route("/assessment")
-def assessment():
-    if 'username' not in session:
-        return redirect(url_for('index'))
-    return render_template("assessment.html", questions=QUESTIONS)
-
-@app.route("/results")
-def results():
-    if 'username' not in session:
-        return redirect(url_for('index'))
-    users = load_users()
-    user_data = users.get(session['username'], {})
-    recommendations = user_data.get('recommendations', [])
-    return render_template("results.html", recommendations=recommendations)
+        return jsonify({"logged_in": True, "username": session['username']})
+    return jsonify({"logged_in": False})
 
 @app.route("/login", methods=["POST"])
 def login():

@@ -12,5 +12,8 @@
         "pycache",
         "signup",
         "yoon"
+    ],
+    "cursorpyright.analysis.extraPaths": [
+        "${workspaceFolder}/.venv/lib/python3.13/site-packages"
     ]
 }

@@ -195,28 +195,29 @@ def home():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
+        # --- replace your /login POST logic with this ---
         data = request.json
         username = data.get('username', '').strip()
         password = data.get('password', '')
         
         users = load_users()
-        
         if username in users:
-            # Check if password is hashed or plaintext (for backward compatibility)
-            stored_password = users[username]['password']
-            if stored_password.startswith('pbkdf2:sha256:'):
-                # Hashed password
-                if check_password_hash(stored_password, password):
+            stored = users[username]['password']
+        
+            # 1) Try hash-based verification (works for any Werkzeug scheme)
+            try:
+                if check_password_hash(stored, password):
                     session['username'] = username
                     return jsonify({"success": True})
-            else:
-                # Plaintext password (legacy users) - hash it on login
-                if stored_password == password:
-                    # Update to hashed password
-                    users[username]['password'] = generate_password_hash(password)
-                    save_users(users)
-                    session['username'] = username
-                    return jsonify({"success": True})
+            except Exception:
+                pass  # if stored isn't a hash string, we'll try plaintext next
+        
+            # 2) Legacy plaintext fallback → upgrade to a hash
+            if stored == password:
+                users[username]['password'] = generate_password_hash(password)
+                save_users(users)
+                session['username'] = username
+                return jsonify({"success": True})
         
         return jsonify({"success": False, "message": "Invalid credentials!"})
     

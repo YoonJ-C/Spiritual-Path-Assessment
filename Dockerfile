@@ -18,4 +18,4 @@ RUN pip install flask gunicorn pymupdf tiktoken
 EXPOSE 7860
 
 # Run with Gunicorn
-CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:7860", "app:app"]
+CMD ["gunicorn", "-w", "1", "-b", "0.0.0.0:7860", "app:app"]

@@ -19,7 +19,7 @@ app = Flask(__name__)
 app.secret_key = 'spiritual-journey-finder-2024'
 
 # File to store user data
-USERS_FILE = 'users_data.json'
+USERS_FILE = os.getenv("USERS_FILE", "/data/users_data.json")
 
 # Together API for chatbot
 TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY")

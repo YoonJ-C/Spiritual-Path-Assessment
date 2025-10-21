@@ -11,6 +11,13 @@ import json
 import os
 from dotenv import load_dotenv
 from together import Together
+from rag_utils import (
+    load_religions_from_csv,
+    prepare_religion_rag_context,
+    get_chunks,
+    get_embeddings,
+    retrieve_closest_chunk,
+)
 
 load_dotenv()
 
@@ -24,24 +31,11 @@ USERS_FILE = os.getenv("USERS_FILE", "users_data.json")
 TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY")
 client = Together(api_key=TOGETHER_API_KEY) if TOGETHER_API_KEY else None
 
-# Load religions data from CSV for RAG
-def load_religions_csv():
-    """Load detailed religion data from CSV"""
-    try:
-        import csv
-        religions_rag = {}
-        with open('religions.csv', 'r', encoding='utf-8') as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                religions_rag[row['key']] = row
-        print(f"✅ Loaded {len(religions_rag)} religions from CSV")
-        return religions_rag
-    except Exception as e:
-        print(f"⚠️ Error loading religions.csv: {e}")
-        return {}
+# Load detailed religion data at startup using RAG utilities
+RELIGIONS_CSV = load_religions_from_csv('religions.csv')
 
-# Load detailed religion data at startup
-RELIGIONS_CSV = load_religions_csv()
+# Precompute embeddings for RAG-based chat (optional, for advanced retrieval)
+RELIGION_EMBEDDINGS = {}  # Will store embeddings per religion if needed
 
 # Assessment Questions
 QUESTIONS = [
@@ -356,6 +350,10 @@ def reset_assessment():
 
 @app.route("/chat", methods=["POST"])
 def chat():
+    """
+    RAG-enhanced chat endpoint for spiritual guidance
+    Uses retrieval-augmented generation with religion-specific context
+    """
     if 'username' not in session:
         return jsonify({"success": False, "message": "Not logged in"})
     
@@ -387,25 +385,20 @@ def chat():
     if not religion_data:
         return jsonify({"success": False, "message": "Religion not found"})
     
-    # Build RAG context with citation markers
+    # Build RAG context using rag_utils
     if religion_key in RELIGIONS_CSV:
-        # Rich context from CSV
+        # Rich context from CSV using RAG utilities
         csv_data = RELIGIONS_CSV[religion_key]
+        context_chunks = prepare_religion_rag_context(csv_data, use_chunks=False)
         context = f"""REFERENCE DATA FOR {csv_data['name']}:
 
-[Description]: {csv_data['description']}
-
-[Practices]: {csv_data['practices']}
-
-[Core Beliefs]: {csv_data['core_beliefs']}
-
-[Common Questions & Facts]: {csv_data['common_curiosities']}"""
+{context_chunks[0]}"""
     else:
         # Fallback to basic data
+        basic_context = prepare_religion_rag_context(religion_data, use_chunks=False)
         context = f"""REFERENCE DATA FOR {religion_data['name']}:
-Description: {religion_data['description']}
-Practices: {religion_data['practices']}
-Beliefs: {religion_data['core_beliefs']}"""
+
+{basic_context[0]}"""
     
     system_prompt = f"""You're a knowledgeable spiritual guide. Use the reference data below to answer questions.
 

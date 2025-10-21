@@ -1,5 +1,6 @@
 """
 Concept: Flask + HTML Integration - Spiritual Path Assessment Tool
+
 This app helps users discover which religious or spiritual path aligns with their 
 beliefs, values, lifestyle, and background through an interactive questionnaire.
 """
@@ -17,8 +18,8 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = 'spiritual-journey-finder-2024'
 
-# File to store user data - defaults to current directory (writable in Docker)
-USERS_FILE = os.getenv("USERS_FILE", "users_data.json")
+# File to store user data
+USERS_FILE = 'users_data.json'
 
 # Together API for chatbot
 TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY")
@@ -136,37 +137,15 @@ RELIGIONS = {
 
 def load_users():
     """Load users from JSON file"""
-    try:
-        if os.path.exists(USERS_FILE):
-            with open(USERS_FILE, 'r') as f:
-                return json.load(f)
-    except Exception as e:
-        print(f"Error loading users: {e}")
+    if os.path.exists(USERS_FILE):
+        with open(USERS_FILE, 'r') as f:
+            return json.load(f)
     return {}
 
 def save_users(users):
     """Save users to JSON file"""
-    try:
-        # Ensure parent directory exists
-        os.makedirs(os.path.dirname(USERS_FILE) if os.path.dirname(USERS_FILE) else '.', exist_ok=True)
-        with open(USERS_FILE, 'w') as f:
-            json.dump(users, f, indent=2)
-        return True
-    except Exception as e:
-        print(f"Error saving users: {e}")
-        return False
-
-def initialize_default_user():
-    """Create default test user if no users exist"""
-    users = load_users()
-    if not users:  # Only create if no users exist
-        users['test'] = {
-            'password': generate_password_hash('test'),
-            'answers': [],
-            'results': []
-        }
-        save_users(users)
-        print("✅ Default test user created (username: test, password: test)")
+    with open(USERS_FILE, 'w') as f:
+        json.dump(users, f, indent=2)
 
 def calculate_results(answers):
     """Calculate which spiritual paths align with user's answers"""
@@ -216,78 +195,58 @@ def home():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        try:
-            data = request.get_json()
-            if not data:
-                return jsonify({"success": False, "message": "Invalid request"}), 400
-                
-            username = data.get('username', '').strip()
-            password = data.get('password', '')
-            
-            if not username or not password:
-                return jsonify({"success": False, "message": "Username and password required"}), 400
-            
-            users = load_users()
-            if username in users:
-                stored = users[username]['password']
-            
-                # 1) Try hash-based verification (works for any Werkzeug scheme)
-                try:
-                    if check_password_hash(stored, password):
-                        session['username'] = username
-                        return jsonify({"success": True})
-                except Exception:
-                    pass  # if stored isn't a hash string, we'll try plaintext next
-            
-                # 2) Legacy plaintext fallback → upgrade to a hash
-                if stored == password:
-                    users[username]['password'] = generate_password_hash(password)
-                    if not save_users(users):
-                        return jsonify({"success": False, "message": "Error saving data"}), 500
+                # --- replace your /login POST logic with this ---
+        data = request.json
+        username = data.get('username', '').strip()
+        password = data.get('password', '')
+
+        users = load_users()
+        if username in users:
+            stored = users[username]['password']
+
+            # 1) Try hash-based verification (works for any Werkzeug scheme)
+            try:
+                if check_password_hash(stored, password):
                     session['username'] = username
                     return jsonify({"success": True})
-            
-            return jsonify({"success": False, "message": "Invalid credentials"})
-        except Exception as e:
-            print(f"Login error: {e}")
-            return jsonify({"success": False, "message": "Server error"}), 500
+            except Exception:
+                pass  # if stored isn't a hash string, we'll try plaintext next
+
+            # 2) Legacy plaintext fallback → upgrade to a hash
+            if stored == password:
+                users[username]['password'] = generate_password_hash(password)
+                save_users(users)
+                session['username'] = username
+                return jsonify({"success": True})
+
+        return jsonify({"success": False, "message": "Invalid credentials!"})
     
     return render_template("index.html", logged_in=False, is_signup=False)
 
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
     if request.method == "POST":
-        try:
-            data = request.get_json()
-            if not data:
-                return jsonify({"success": False, "message": "Invalid request"}), 400
-                
-            username = data.get('username', '').strip()
-            password = data.get('password', '')
-            
-            if not username or not password:
-                return jsonify({"success": False, "message": "Username and password required"}), 400
-            
-            users = load_users()
-            
-            if username in users:
-                return jsonify({"success": False, "message": "Username already exists"})
-            
-            # Create new user with hashed password
-            users[username] = {
-                'password': generate_password_hash(password),
-                'answers': [],
-                'results': []
-            }
-            
-            if not save_users(users):
-                return jsonify({"success": False, "message": "Error saving user data"}), 500
-                
-            session['username'] = username
-            return jsonify({"success": True})
-        except Exception as e:
-            print(f"Signup error: {e}")
-            return jsonify({"success": False, "message": "Server error"}), 500
+        data = request.json
+        username = data.get('username', '').strip()
+        password = data.get('password', '')
+        
+        users = load_users()
+        
+        if username in users:
+            return jsonify({"success": False, "message": "Username already exists!"})
+        
+        if not username or not password:
+            return jsonify({"success": False, "message": "Username and password required!"})
+        
+        # Create new user with hashed password
+        users[username] = {
+            'password': generate_password_hash(password),
+            'answers': [],
+            'results': []
+        }
+        save_users(users)
+        session['username'] = username
+        return jsonify({"success": True})
     
     return render_template("index.html", logged_in=False, is_signup=True)
 
@@ -397,9 +356,6 @@ Rules: Keep 30-50 words, be respectful, use * for bullet points (format: "Text: 
             "success": False,
             "message": f"Chat error: {str(e)}"
         })
-
-# Initialize default test user on startup
-initialize_default_user()
 
 if __name__ == "__main__":
     app.run(debug=True, port=5001)

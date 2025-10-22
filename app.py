@@ -11,13 +11,7 @@ import json
 import os
 from dotenv import load_dotenv
 from together import Together
-from rag_utils import (
-    load_religions_from_csv,
-    prepare_religion_rag_context,
-    get_chunks,
-    get_embeddings,
-    retrieve_closest_chunk,
-)
+from rag_utils import load_religions_from_csv, prepare_religion_rag_context
 
 load_dotenv()
 
@@ -31,11 +25,8 @@ USERS_FILE = os.getenv("USERS_FILE", "users_data.json")
 TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY")
 client = Together(api_key=TOGETHER_API_KEY) if TOGETHER_API_KEY else None
 
-# Load detailed religion data at startup using RAG utilities
+# Load detailed religion data at startup
 RELIGIONS_CSV = load_religions_from_csv('religions.csv')
-
-# Precompute embeddings for RAG-based chat (optional, for advanced retrieval)
-RELIGION_EMBEDDINGS = {}  # Will store embeddings per religion if needed
 
 # Assessment Questions
 QUESTIONS = [

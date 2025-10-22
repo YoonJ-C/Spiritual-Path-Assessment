@@ -54,6 +54,9 @@ wheels/
 .coverage
 htmlcov/
 
+# RAG test data
+rag_data/
+
 # Other
 *.bak
 *.tmp

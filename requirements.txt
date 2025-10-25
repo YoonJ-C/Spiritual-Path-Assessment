@@ -1,4 +1,4 @@
-# Task 10 - Flask + HTML Integration with Chatbot
+# Flask + HTML Integration with Chatbot
 Flask>=2.0.0
 python-dotenv>=0.19.0
 together>=0.2.0

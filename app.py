@@ -1,6 +1,5 @@
 """
 Concept: Flask + HTML Integration - Spiritual Path Assessment Tool
-
 This app helps users discover which religious or spiritual path aligns with their 
 beliefs, values, lifestyle, and background through an interactive questionnaire.
 """
@@ -12,6 +11,7 @@ import json
 import os
 from dotenv import load_dotenv
 from together import Together
+from rag_utils import load_religions_from_csv, prepare_religion_rag_context
 
 load_dotenv()
 
@@ -24,6 +24,9 @@ USERS_FILE = os.getenv("USERS_FILE", "users_data.json")
 # Together API for chatbot
 TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY")
 client = Together(api_key=TOGETHER_API_KEY) if TOGETHER_API_KEY else None
+
+# Load detailed religion data at startup
+RELIGIONS_CSV = load_religions_from_csv('religions.csv')
 
 # Assessment Questions
 QUESTIONS = [
@@ -338,6 +341,10 @@ def reset_assessment():
 
 @app.route("/chat", methods=["POST"])
 def chat():
+    """
+    RAG-enhanced chat endpoint for spiritual guidance
+    Uses retrieval-augmented generation with religion-specific context
+    """
     if 'username' not in session:
         return jsonify({"success": False, "message": "Not logged in"})
     
@@ -352,37 +359,65 @@ def chat():
     if not user_message or not religion_name:
         return jsonify({"success": False, "message": "Message and religion required"})
     
-    # Find religion details
+    # Find religion in CSV data first, fallback to basic RELIGIONS
     religion_data = None
+    religion_key = None
+    
     for key, value in RELIGIONS.items():
         if value['name'] == religion_name:
-            religion_data = value
+            religion_key = key
+            # Use CSV data if available
+            if key in RELIGIONS_CSV:
+                religion_data = RELIGIONS_CSV[key]
+            else:
+                religion_data = value
             break
     
     if not religion_data:
         return jsonify({"success": False, "message": "Religion not found"})
     
-    # Create context-aware system prompt
-    system_prompt = f"""You're a spiritual guide for {religion_data['name']}.
-Info: {religion_data['description']} | Practices: {religion_data['practices']} | Beliefs: {religion_data['core_beliefs']}
-Rules: Keep 30-50 words, be respectful, use * for bullet points (format: "Text: * item * item"), answer directly."""
+    # Build RAG context using rag_utils
+    if religion_key in RELIGIONS_CSV:
+        # Rich context from CSV using RAG utilities
+        csv_data = RELIGIONS_CSV[religion_key]
+        context_chunks = prepare_religion_rag_context(csv_data, use_chunks=False)
+        context = f"""REFERENCE DATA FOR {csv_data['name']}:
 
-    # Build conversation history
+{context_chunks[0]}"""
+    else:
+        # Fallback to basic data
+        basic_context = prepare_religion_rag_context(religion_data, use_chunks=False)
+        context = f"""REFERENCE DATA FOR {religion_data['name']}:
+
+{basic_context[0]}"""
+    
+    system_prompt = f"""You're a knowledgeable spiritual guide. Use the reference data below to answer questions.
+
+{context}
+
+INSTRUCTIONS:
+- Keep responses concise, minimal. 30-60 words, depending on the context
+- ALWAYS complete your sentences - never cut off mid-sentence
+- Be respectful and accurate
+- If unsure, say so
+- Use * for bullet points if listing
+- End responses with complete thoughts, not incomplete phrases
+- If you need to cut information, end with "..." but complete the current sentence"""
+
+    # Build conversation
     messages = [{"role": "system", "content": system_prompt}]
     
-    # Add chat history (last 5 messages for context)
-    for msg in chat_history[-5:]:
+    # Add recent chat history
+    for msg in chat_history[-4:]:
         messages.append({"role": msg["role"], "content": msg["content"]})
     
-    # Add current user message
     messages.append({"role": "user", "content": user_message})
     
     try:
-        # Call Together API with limited tokens for concise responses
         response = client.chat.completions.create(
             model="meta-llama/Meta-Llama-3-8B-Instruct-Lite",
             messages=messages,
-            max_tokens=80,  # Roughly 50-60 words maximum
+            max_tokens=200,
             temperature=0.7,
         )
         
@@ -403,4 +438,4 @@ Rules: Keep 30-50 words, be respectful, use * for bullet points (format: "Text: 
 initialize_default_user()
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5001)
+    app.run(debug=True, port=5003)

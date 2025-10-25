@@ -223,9 +223,7 @@ def calculate_results(answers):
 
 @app.route("/")
 def landing():
-    # If user is already logged in, redirect to assessment
-    if 'username' in session:
-        return redirect(url_for('assessment'))
+    # Always show the landing page, don't auto-redirect logged in users
     return render_template('landing.html')
 
 @app.route("/assessment")

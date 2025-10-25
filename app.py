@@ -18,6 +18,12 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = 'spiritual-journey-finder-2024'
 
+# Session configuration for production deployment
+app.config['SESSION_COOKIE_SECURE'] = False  # For HTTP
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 hour
+
 # File to store user data - defaults to current directory (writable in Docker)
 USERS_FILE = os.getenv("USERS_FILE", "users_data.json")
 
@@ -450,6 +456,27 @@ def debug():
         "together_api_key_length": len(TOGETHER_API_KEY) if TOGETHER_API_KEY else 0,
         "flask_debug": app.debug,
         "users_file": USERS_FILE
+    })
+
+@app.route("/session-debug")
+def session_debug():
+    """
+    Debug endpoint to check session and user data
+    """
+    users = load_users()
+    return jsonify({
+        "session_data": dict(session),
+        "username_in_session": 'username' in session,
+        "current_username": session.get('username', 'None'),
+        "users_file_exists": os.path.exists(USERS_FILE),
+        "users_file_path": os.path.abspath(USERS_FILE),
+        "users_count": len(users),
+        "user_list": list(users.keys()),
+        "session_cookie_config": {
+            "secure": app.config.get('SESSION_COOKIE_SECURE'),
+            "httponly": app.config.get('SESSION_COOKIE_HTTPONLY'),
+            "samesite": app.config.get('SESSION_COOKIE_SAMESITE')
+        }
     })
 
 # Initialize default test user on startup

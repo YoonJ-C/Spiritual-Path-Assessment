@@ -438,6 +438,20 @@ INSTRUCTIONS:
             "message": f"Chat error: {str(e)}"
         })
 
+@app.route("/debug")
+def debug():
+    """
+    Debug endpoint to check API configuration and environment
+    """
+    return jsonify({
+        "api_key_set": bool(TOGETHER_API_KEY),
+        "client_available": client is not None,
+        "environment": os.environ.get("ENVIRONMENT", "unknown"),
+        "together_api_key_length": len(TOGETHER_API_KEY) if TOGETHER_API_KEY else 0,
+        "flask_debug": app.debug,
+        "users_file": USERS_FILE
+    })
+
 # Initialize default test user on startup
 initialize_default_user()
 

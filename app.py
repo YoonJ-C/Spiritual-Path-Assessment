@@ -16,16 +16,30 @@ from rag_utils import load_religions_from_csv, prepare_religion_rag_context
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = 'spiritual-journey-finder-2024'
+app.secret_key = os.getenv('SECRET_KEY', 'spiritual-journey-finder-2024')
+
+# Detect if running on Hugging Face Spaces
+IS_HF_SPACE = os.getenv('SPACE_ID') is not None or os.getenv('HUGGINGFACE_HUB_TOKEN') is not None
 
 # Session configuration for production deployment
-app.config['SESSION_COOKIE_SECURE'] = False  # For HTTP
-app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 hour
+if IS_HF_SPACE:
+    # HTTPS configuration for Hugging Face Spaces
+    app.config['SESSION_COOKIE_SECURE'] = True
+    app.config['SESSION_COOKIE_HTTPONLY'] = True
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+    app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 hour
+    # Additional production settings
+    app.config['SESSION_COOKIE_DOMAIN'] = None
+    app.config['SESSION_COOKIE_PATH'] = '/'
+else:
+    # HTTP configuration for local development
+    app.config['SESSION_COOKIE_SECURE'] = False
+    app.config['SESSION_COOKIE_HTTPONLY'] = True
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+    app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 hour
 
-# File to store user data - defaults to current directory (writable in Docker)
-USERS_FILE = os.getenv("USERS_FILE", "users_data.json")
+# File to store user data - use /tmp for Hugging Face Spaces
+USERS_FILE = os.getenv("USERS_FILE", "/tmp/users_data.json" if IS_HF_SPACE else "users_data.json")
 
 # Together API for chatbot
 TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY")
@@ -152,6 +166,10 @@ def load_users():
                 return json.load(f)
     except Exception as e:
         print(f"Error loading users: {e}")
+        # Log additional info for debugging
+        print(f"Users file path: {USERS_FILE}")
+        print(f"File exists: {os.path.exists(USERS_FILE)}")
+        print(f"Is HF Space: {IS_HF_SPACE}")
     return {}
 
 def save_users(users):
@@ -485,5 +503,14 @@ def session_debug():
 # Initialize default test user on startup
 initialize_default_user()
 
+# Print startup information
+print(f"🚀 Starting Spiritual Path Assessment App")
+print(f"📍 Environment: {'Hugging Face Spaces' if IS_HF_SPACE else 'Local Development'}")
+print(f"🔐 Session Secure: {app.config['SESSION_COOKIE_SECURE']}")
+print(f"📁 Users File: {USERS_FILE}")
+print(f"🔑 API Key Set: {bool(TOGETHER_API_KEY)}")
+
 if __name__ == "__main__":
-    app.run(debug=True, port=5003)
+    # Use port 7860 for Hugging Face Spaces, 5003 for local development
+    port = int(os.getenv("PORT", 5003))
+    app.run(debug=not IS_HF_SPACE, host="0.0.0.0", port=port)

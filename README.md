@@ -1,3 +1,15 @@
+---
+title: Spiritual Path Assessment
+emoji: ✨
+colorFrom: blue
+colorTo: purple
+sdk: docker
+pinned: false
+hf_oauth: true
+hf_oauth_scopes:
+  - read-repos
+---
+
 ## 🌟 Spiritual Path Finder with AI Chatbot
 
 An interactive web application that helps users discover which religious or spiritual path aligns with their beliefs, values, and lifestyle through an 8-question assessment. Features real-time AI chatbot assistance for each recommended path.

@@ -630,3 +630,12 @@ button:disabled {
     transform: translateX(-3px);
 }
 
+/* Results description max-width */
+.subtitle {
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.results-spacing {
+    margin-top: 40px;
+}

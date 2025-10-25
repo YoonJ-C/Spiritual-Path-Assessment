@@ -355,7 +355,7 @@ button:disabled {
 .nav-buttons {
     display: flex;
     gap: 12px;
-    justify-content: space-between;
+    justify-content: flex-start;
     margin-top: 20px;
 }
 
@@ -605,5 +605,28 @@ button:disabled {
     font-style: italic;
     font-size: 13px;
     padding: 10px 14px;
+}
+
+/* Navigation Header */
+.nav-header {
+    padding: 0 0 20px 0;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.back-link {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.back-link:hover {
+    color: #5a6fd8;
+    transform: translateX(-3px);
 }
 

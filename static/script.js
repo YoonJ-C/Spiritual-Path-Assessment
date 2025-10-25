@@ -69,11 +69,6 @@ function showQuestion(questionIndex) {
         block.classList.remove('active');
         var blockIndex = parseInt(block.getAttribute('data-question-index'));
         if (blockIndex === questionIndex) block.classList.add('active');
-        if (blockIndex < questionIndex) {
-            block.querySelectorAll('input[type="radio"]').forEach(function(radio) {
-                radio.disabled = true;
-            });
-        }
     });
     
     currentQuestion = questionIndex;
@@ -83,20 +78,13 @@ function showQuestion(questionIndex) {
 }
 
 function updateNavigationButtons() {
-    var nextBtn = document.getElementById('nextBtn' + currentQuestion);
+    // Check if we're on the last question and it's answered
+    var currentQuestionId = questionIds[currentQuestion - 1];
+    var radioName = 'q' + currentQuestionId;
+    var isAnswered = document.querySelector('input[name="' + radioName + '"]:checked') !== null;
     
-    if (nextBtn) {
-        var currentQuestionId = questionIds[currentQuestion - 1];
-        var radioName = 'q' + currentQuestionId;
-        var isAnswered = document.querySelector('input[name="' + radioName + '"]:checked') !== null;
-        
-        if (currentQuestion === totalQuestions && isAnswered) {
-            nextBtn.style.display = 'none';
-            document.getElementById('submitBtn').style.display = 'block';
-        } else {
-            nextBtn.disabled = !isAnswered;
-            nextBtn.style.display = 'inline-block';
-        }
+    if (currentQuestion === totalQuestions && isAnswered) {
+        document.getElementById('submitBtn').style.display = 'block';
     }
 }
 
@@ -108,18 +96,12 @@ function handleAnswer(radioElement) {
         return;
     }
     
-    updateNavigationButtons();
-    
     // Auto-advance to next question after selection
     setTimeout(function() {
         if (questionIndex < totalQuestions) {
             showQuestion(questionIndex + 1);
         } else {
             // Last question - show submit button
-            var nextBtn = document.getElementById('nextBtn' + questionIndex);
-            if (nextBtn) {
-                nextBtn.style.display = 'none';
-            }
             document.getElementById('submitBtn').style.display = 'block';
         }
     }, 400);
@@ -128,6 +110,12 @@ function handleAnswer(radioElement) {
 function goToNext() {
     if (currentQuestion < totalQuestions) {
         showQuestion(currentQuestion + 1);
+    }
+}
+
+function goToPrev() {
+    if (currentQuestion > 1) {
+        showQuestion(currentQuestion - 1);
     }
 }
 

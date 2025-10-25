@@ -71,8 +71,16 @@ p {
     color: #9CA3AF;
     font-size: 15px;
     text-align: center;
-    margin-bottom: 25px;
+    margin-bottom: 20px;
     line-height: 1.6;
+}
+
+
+/* Results description max-width */
+.subtitle {
+    max-width: 500px;
+    margin: 0 auto;
+    margin-bottom: 20px;
 }
 
 /* Mobile Responsive */
@@ -630,11 +638,30 @@ button:disabled {
     transform: translateX(-3px);
 }
 
-/* Results description max-width */
-.subtitle {
-    max-width: 500px;
-    margin: 0 auto;
+/* Previous button styling to match back-link */
+.nav-btn.prev {
+    background: none;
+    color: #999;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: none;
+    padding: 0;
+    box-shadow: none;
 }
+
+.nav-btn.prev:hover {
+    color: #5a6fd8;
+    transform: translateX(-3px);
+    background: none;
+    box-shadow: none;
+}
+
+
 
 .results-spacing {
     margin-top: 40px;

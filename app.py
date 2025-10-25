@@ -507,6 +507,7 @@ print(f"📍 Environment: {'Hugging Face Spaces' if IS_HF_SPACE else 'Local Deve
 print(f"🔐 Session Secure: {app.config['SESSION_COOKIE_SECURE']}")
 print(f"📁 Users File: {USERS_FILE}")
 print(f"🔑 API Key Set: {bool(TOGETHER_API_KEY)}")
+print(f"🔄 Version: 2.1 - Navigation Flow Fixed")
 
 if __name__ == "__main__":
     # Use port 7860 for Hugging Face Spaces, 5003 for local development

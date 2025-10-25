@@ -198,7 +198,11 @@ def calculate_results(answers):
     return recommendations
 
 @app.route("/")
-def home():
+def landing():
+    return render_template('landing.html')
+
+@app.route("/assessment")
+def assessment():
     if 'username' not in session:
         return redirect(url_for('login'))
     

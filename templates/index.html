@@ -123,6 +123,15 @@
                                        id="input-{{ result.name|replace(' ', '-') }}"
                                        placeholder="Ask about {{ result.name }}..."
                                        onkeypress="if(event.key==='Enter') sendMessage('{{ result.name }}')">
+                                <button class="voice-btn" 
+                                        id="voice-{{ result.name|replace(' ', '-') }}"
+                                        onmousedown="startVoiceInput('{{ result.name }}')"
+                                        onmouseup="stopVoiceInput('{{ result.name }}')"
+                                        ontouchstart="startVoiceInput('{{ result.name }}')"
+                                        ontouchend="stopVoiceInput('{{ result.name }}')"
+                                        title="Hold to record with live transcription">
+                                    🎤
+                                </button>
                                 <button class="chat-send-btn" 
                                         id="send-{{ result.name|replace(' ', '-') }}"
                                         onclick="sendMessage('{{ result.name }}')">

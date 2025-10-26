@@ -12,6 +12,7 @@ import os
 from dotenv import load_dotenv
 from together import Together
 from rag_utils import load_religions_from_csv, prepare_religion_rag_context
+from openai import OpenAI
 
 load_dotenv()
 
@@ -30,6 +31,10 @@ USERS_FILE = os.getenv("USERS_FILE", "users_data.json")
 # Together API for chatbot
 TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY")
 client = Together(api_key=TOGETHER_API_KEY) if TOGETHER_API_KEY else None
+
+# OpenAI for Whisper transcription
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+openai_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 
 # Load detailed religion data at startup
 RELIGIONS_CSV = load_religions_from_csv('religions.csv')
@@ -443,6 +448,31 @@ INSTRUCTIONS:
             "success": False,
             "message": f"Chat error: {str(e)}"
         })
+
+@app.route("/transcribe", methods=["POST"])
+def transcribe():
+    """Convert audio to text using Whisper"""
+    if 'username' not in session:
+        return jsonify({"success": False, "message": "Not logged in"})
+    
+    if not openai_client:
+        return jsonify({"success": False, "message": "Whisper not configured"})
+    
+    audio_file = request.files.get('audio')
+    if not audio_file:
+        return jsonify({"success": False, "message": "No audio file"})
+    
+    try:
+        # Convert FileStorage to bytes
+        audio_bytes = audio_file.read()
+        
+        transcript = openai_client.audio.transcriptions.create(
+            model="whisper-1",
+            file=("recording.webm", audio_bytes, "audio/webm")
+        )
+        return jsonify({"success": True, "text": transcript.text})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
 
 @app.route("/debug")
 def debug():

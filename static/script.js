@@ -314,3 +314,91 @@ function sendMessage(religionName) {
     });
 }
 
+// ==================== VOICE CHAT ====================
+
+var recognition = null;
+var currentReligion = null;
+var isRecording = false;
+
+function initializeSpeechRecognition() {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US';
+        
+        recognition.onresult = function(event) {
+            var interimTranscript = '';
+            var finalTranscript = '';
+            
+            for (var i = event.resultIndex; i < event.results.length; i++) {
+                var transcript = event.results[i][0].transcript;
+                if (event.results[i].isFinal) {
+                    finalTranscript += transcript + ' ';
+                } else {
+                    interimTranscript += transcript;
+                }
+            }
+            
+            // Update input field with live transcription
+            if (currentReligion) {
+                var inputId = 'input-' + sanitizeReligionName(currentReligion);
+                var inputEl = document.getElementById(inputId);
+                if (inputEl) {
+                    inputEl.value = finalTranscript + interimTranscript;
+                }
+            }
+        };
+        
+        recognition.onerror = function(event) {
+            console.error('Speech recognition error:', event.error);
+            if (event.error === 'no-speech') {
+                stopVoiceInput();
+            }
+        };
+        
+        recognition.onend = function() {
+            if (isRecording) {
+                // Restart if it stopped unexpectedly
+                try {
+                    recognition.start();
+                } catch(e) {
+                    stopVoiceInput();
+                }
+            }
+        };
+    }
+}
+
+function startVoiceInput(religionName) {
+    if (!recognition) {
+        alert('Speech recognition not supported in your browser');
+        return;
+    }
+    
+    currentReligion = religionName;
+    isRecording = true;
+    
+    try {
+        recognition.start();
+        document.getElementById('voice-' + sanitizeReligionName(religionName)).classList.add('recording');
+    } catch(e) {
+        console.log('Already started or error:', e);
+    }
+}
+
+function stopVoiceInput(religionName) {
+    if (recognition && isRecording) {
+        isRecording = false;
+        recognition.stop();
+        document.getElementById('voice-' + sanitizeReligionName(religionName)).classList.remove('recording');
+    }
+}
+
+// Initialize on page load
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeSpeechRecognition);
+} else {
+    initializeSpeechRecognition();
+}
+

@@ -83,6 +83,9 @@
                 <p class="subtitle">
                     Based on your responses, here are the spiritual paths that align most closely with your values and beliefs:
                 </p>
+                <div class="results-explanation">
+                    * Percentages reflect alignment strength based on your answers (max 24 points(=100%) per path).
+                </div>
                 
                 <div id="resultsContainer" class="results-spacing">
                     {% for result in results %}
@@ -110,7 +113,7 @@
                             <div class="chat-messages" id="messages-{{ result.name|replace(' ', '-') }}">
                                 <div class="chat-message bot">
                                     Hi! Ask me anything about {{ result.name }}.<br>
-                                    <span style="color:#888; font-size:13px;">
+                                    <span style="color:#666; font-size:14px;">
                                         Example: "How do I get started with this path?"
                                     </span>
                                 </div>

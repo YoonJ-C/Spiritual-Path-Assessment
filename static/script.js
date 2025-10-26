@@ -402,3 +402,38 @@ if (document.readyState === 'loading') {
     initializeSpeechRecognition();
 }
 
+// Initialize on page load
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeSpeechRecognition);
+} else {
+    initializeSpeechRecognition();
+}
+
+// Make tooltips appear instantly on hover
+document.addEventListener('DOMContentLoaded', function() {
+    const micButtons = document.querySelectorAll('button[title]');
+    
+    micButtons.forEach(button => {
+        const tooltipText = button.getAttribute('title');
+        button.removeAttribute('title'); // Remove native tooltip
+        
+        // Create custom tooltip element
+        const tooltip = document.createElement('div');
+        tooltip.className = 'custom-tooltip';
+        tooltip.textContent = tooltipText;
+        tooltip.className = 'custom-tooltip';
+        
+        // Add tooltip to button
+        button.style.position = 'relative';
+        button.appendChild(tooltip);
+        
+        button.addEventListener('mouseenter', function() {
+            tooltip.style.opacity = '1';
+        });
+        
+        button.addEventListener('mouseleave', function() {
+            tooltip.style.opacity = '0';
+        });
+    });
+});
+

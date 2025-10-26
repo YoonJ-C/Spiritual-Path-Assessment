@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ title if logged_in else 'Spiritual Path Finder - Login' }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Add Font Awesome here -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
     <div class="container">
@@ -13,7 +15,7 @@
         </div>
         {% if not logged_in %}
             <!-- Login/Signup Form -->
-            <h1><span class="icon">🌟</span>Spiritual Path Finder</h1>
+            <h1><span class="icon"></span>Spiritual Path Finder</h1>
             <p>{{ 'Begin your journey of self-discovery' if is_signup else 'Welcome back, seeker!' }}</p>
             
             <div class="auth-form">
@@ -28,13 +30,9 @@
         {% else %}
             <!-- Assessment Interface -->
             <h1>{{ title }}</h1>
-            <p>{{ message }}</p>
+            <p>{{ message }} <i class="fas fa-heart"></i> </p>
             
             {% if not has_results %}
-                <p class="subtitle">
-                    Discover which spiritual or religious path aligns with your beliefs, values, and lifestyle. 
-                    Answer 8 thoughtful questions about your worldview.
-                </p>
                 
                 <div class="question-counter" id="questionCounter">Question 1 of {{ questions|length }}</div>
                 
@@ -98,14 +96,14 @@
                         </div>
                         <p class="result-description">{{ result.description }}</p>
                         <div class="result-details">
-                            <h5>📿 Common Practices:</h5>
+                            <h5><i class="fa-solid fa-grip"></i> Common Practices:</h5>
                             <p>{{ result.practices }}</p>
-                            <h5>💭 Core Beliefs:</h5>
+                            <h5><i class="fa-solid fa-rainbow"></i> Core Beliefs:</h5>
                             <p>{{ result.core_beliefs }}</p>
                         </div>
                         
                         <button class="chat-toggle-btn" onclick="toggleChat('{{ result.name }}')">
-                            💬 Ask Questions About {{ result.name }}
+                            <i class="fa-solid fa-comment-dots"></i> Ask Questions About {{ result.name }}
                         </button>
                         
                         <div class="chat-window" id="chat-{{ result.name|replace(' ', '-') }}">
@@ -130,7 +128,7 @@
                                         ontouchstart="startVoiceInput('{{ result.name }}')"
                                         ontouchend="stopVoiceInput('{{ result.name }}')"
                                         title="Hold to record with live transcription">
-                                    🎤
+                                        <i class="fa-solid fa-microphone"></i>
                                 </button>
                                 <button class="chat-send-btn" 
                                         id="send-{{ result.name|replace(' ', '-') }}"
@@ -144,8 +142,12 @@
                 </div>
                 
                 <div class="buttons-row">
-                    <button class="btn reset-btn" onclick="resetAssessment()">🔄 Retake Assessment</button>
-                    <a href="/logout" class="btn logout-btn">🚪 Sign Out</a>
+                    <button class="btn reset-btn" onclick="resetAssessment()"> 
+                        <i class="fa-solid fa-arrow-rotate-right"></i> Retake Assessment
+                    </button>
+                    <a href="/logout" class="btn logout-btn">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out
+                    </a>
                 </div>
             {% endif %}
         {% endif %}

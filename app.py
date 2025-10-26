@@ -224,7 +224,7 @@ def assessment():
     return render_template(
         "index.html", 
         title="Spiritual Path Finder", 
-        message=f"Welcome, {session['username']}! 🌟",
+        message=f"Welcome, {session['username']}!",
         username=session['username'],
         logged_in=True,
         questions=QUESTIONS,

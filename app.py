@@ -390,13 +390,13 @@ def chat():
     if religion_key in RELIGIONS_CSV:
         # Rich context from CSV using RAG utilities
         csv_data = RELIGIONS_CSV[religion_key]
-        context_chunks = prepare_religion_rag_context(csv_data, use_chunks=False)
+        context_chunks = prepare_religion_rag_context(csv_data)
         context = f"""REFERENCE DATA FOR {csv_data['name']}:
 
 {context_chunks[0]}"""
     else:
         # Fallback to basic data
-        basic_context = prepare_religion_rag_context(religion_data, use_chunks=False)
+        basic_context = prepare_religion_rag_context(religion_data)
         context = f"""REFERENCE DATA FOR {religion_data['name']}:
 
 {basic_context[0]}"""
@@ -427,7 +427,7 @@ INSTRUCTIONS:
         response = client.chat.completions.create(
             model="meta-llama/Meta-Llama-3-8B-Instruct-Lite",
             messages=messages,
-            max_tokens=200,
+            max_tokens=400,
             temperature=0.7,
         )
         

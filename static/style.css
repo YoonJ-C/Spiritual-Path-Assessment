@@ -359,6 +359,29 @@ button:disabled {
     margin-top: 20px;
 }
 
+/* Previous button - styled like "Back to Home" */
+.nav-btn.prev {
+    background: transparent;
+    color: #999;
+    border: none;
+    padding: 0;
+    font-weight: 600;
+    font-size: 14px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.3s ease;
+    box-shadow: none;
+}
+
+.nav-btn.prev:hover {
+    background: transparent;
+    color: #666;
+    transform: translateX(-3px);
+    box-shadow: none;
+}
+
 .buttons-row {
     display: flex;
     gap: 10px;
@@ -384,7 +407,7 @@ button:disabled {
 }
 
 .result-card.rank-3 {
-    background: #90EE90;
+    background: #a6e9a6;
 }
 
 .result-header {
@@ -634,6 +657,7 @@ button:disabled {
 .subtitle {
     max-width: 500px;
     margin: 0 auto;
+    margin-bottom: 20px;
 }
 
 .results-spacing {

@@ -25,7 +25,7 @@ function authenticate() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            window.location.href = '/';
+            window.location.href = '/assessment';
         } else {
             document.getElementById('result').innerHTML = 
                 `<p class="error-msg">${data.message}</p>`;

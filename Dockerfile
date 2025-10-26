@@ -11,11 +11,8 @@ RUN pip install --no-cache-dir --upgrade -r requirements.txt
 
 COPY --chown=user . /app
 
-# Install Flask
-RUN pip install flask gunicorn pymupdf tiktoken
-
-# Expose default port
-EXPOSE 7860
+# Expose port 5003 (matches app.py)
+EXPOSE 5003
 
 # Run with Gunicorn
-CMD ["gunicorn", "-w", "1", "-b", "0.0.0.0:7860", "app:app"]
+CMD ["gunicorn", "-w", "1", "-b", "0.0.0.0:5003", "app:app"]

@@ -15,7 +15,7 @@ def load_religions_from_csv(csv_path):
         print(f"⚠️ Error loading religions CSV: {e}")
         return {}
 
-def prepare_religion_rag_context(religion_data, use_chunks=True):
+def prepare_religion_rag_context(religion_data):
     """Prepare context string from religion data"""
     parts = []
     
@@ -28,4 +28,4 @@ def prepare_religion_rag_context(religion_data, use_chunks=True):
     if 'common_curiosities' in religion_data:
         parts.append(f"Common Questions: {religion_data['common_curiosities']}")
     
-    return ['\n\n'.join(parts)] if not use_chunks else parts
+    return ['\n\n'.join(parts)]

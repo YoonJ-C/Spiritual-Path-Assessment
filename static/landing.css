@@ -10,25 +10,11 @@
         font-family: var(--font-family);
         line-height: 1.6;
         color: var(--text-primary);
-        background: var(--bg-white);
+        background: #ffffff; /* Explicit white background */
         overflow-x: hidden;
     }
     
-    /* Animated Gradient Background */
-    .gradient-bg {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100vh;
-        background: 
-            radial-gradient(ellipse at top, rgba(152, 240, 248, 0.8) 0%, transparent 50%),
-            radial-gradient(ellipse at bottom, rgba(252, 192, 162, 0.6) 0%, transparent 50%),
-            linear-gradient(180deg, #f8fafc 0%, #ffffff 50%, #fef7f0 100%);
-        opacity: 1;
-        z-index: -1;
-        animation: gradientShift 15s ease infinite;
-    }
+
     
     @keyframes gradientShift {
         0%, 100% { transform: scale(1) rotate(0deg); }
@@ -51,7 +37,7 @@
     .nav-container {
         max-width: 1200px;
         margin: 0 auto;
-        padding: 0 var(--space-2xl);
+        padding: 0 var(--space-xl);
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -65,7 +51,7 @@
     
     .nav-cta {
         padding: var(--space-sm) var(--space-xl);
-        background: var(--info);
+        background: var(--primary-dark);
         color: var(--text-inverse);
         text-decoration: none;
         border-radius: var(--radius-sm);
@@ -82,25 +68,50 @@
     
     /* Main Content */
     .main-content {
-        padding-top: 120px;
+        padding-top: 0; /* Remove top padding so video starts from nav */
         padding-bottom: 120px;
     }
     
     /* Hero Section */
     .hero-section {
-        padding: var(--space-4xl) var(--space-2xl) var(--space-3xl); /* Increased top padding */
+        padding: 120px var(--space-2xl) var(--space-3xl); /* Add nav height as top padding */
         text-align: center;
         position: relative;
-        min-height: 85vh; /* Increased from 75vh */
+        min-height: 100vh; /* Full viewport height */
         display: flex;
         align-items: center;
+        overflow: hidden; /* Prevent video from showing outside the section */
+        background: transparent; /* Allow video to show through */
     }
     
     .hero-container {
         max-width: 1000px;
         margin: 0 auto;
     }
+
     
+    /* Hero Video Background */
+    .hero-video {
+        position: fixed; /* Fixed positioning to cover full viewport */
+        top: 0;
+        left: 0;
+        width: 100vw; /* Full viewport width */
+        height: 100vh; /* Full viewport height */
+        object-fit: cover;
+        z-index: -1; /* Above gradient background */
+        background: #000; /* Black fallback */
+        opacity: .5;
+        visibility: visible;
+    }
+
+
+/* Ensure text is above video */
+.hero-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+}
     .badge {
         display: inline-block;
         padding: var(--space-xs) var(--space-md);
@@ -127,9 +138,9 @@
     
     .hero-subtitle {
         font-size: var(--font-size-xl);
-        color: var(--text-secondary);
+        color: var(--text-primary);
         max-width: 700px;
-        margin: 0 auto var(--space-3xl);
+        margin: 0 auto 6rem; /* Increased from var(--space-3xl) */
         line-height: 1.8;
         animation: fadeInUp 0.6s ease 0.2s both;
     }
@@ -259,13 +270,18 @@
     
     /* Features Section */
     .features-section {
-        padding: 120px 0px 120px 0px;
+        width: 100vw; /* Full viewport width */
+        height: 100vh; /* Full viewport height */
         background: var(--bg-gray);
-    }
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        }
     
     .section-container {
         max-width: 1200px;
         margin: 0 auto;
+        padding: 0 var(--space-xl);
     }
     
     .section-header {
@@ -287,8 +303,9 @@
     
     .features-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-        gap: var(--space-2xl);
+        grid-template-columns: repeat(3, 1fr);
+        gap: var(--space-xl);
+        justify-items: center;
     }
     
     .feature-card {
@@ -407,7 +424,7 @@
             padding: var(--space-3xl) var(--space-md) var(--space-4xl); /* Increased mobile padding */
             min-height: 80vh; /* Adjusted for mobile */
         }
-
+    
         
         .hero-title {
             font-size: 2.5rem;
@@ -435,7 +452,8 @@
         }
         
         .features-grid {
-            grid-template-columns: 1fr;
+            grid-template-columns: 1fr; /* Keep single column on mobile */
+            gap: var(--space-lg); /* Reduce gap on mobile */
         }
         
         .btn-primary, .btn-secondary {

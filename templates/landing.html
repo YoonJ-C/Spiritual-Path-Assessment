@@ -21,6 +21,12 @@
 
     <main class="main-content">
         <section class="hero-section">
+            <!-- Video Background -->
+                <video class="hero-video" autoplay muted loop playsinline preload="auto">
+                    <source src="{{ url_for('static', filename='video/animation-light-theme.mp4') }}" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+            
             <div class="hero-container">
                 <div class="badge"> <i class="fa-solid fa-compass"></i> Discover Your Path</div>
                 <h1 class="hero-title">
@@ -97,5 +103,44 @@
             <p>© 2025 Spiritual Path Assessment. Empowering your spiritual journey.</p>
         </div>
     </footer>
+
+    <script>
+        // Debug video loading
+        document.addEventListener('DOMContentLoaded', function() {
+            const video = document.querySelector('.hero-video');
+            if (video) {
+                console.log('Video element found:', video);
+                console.log('Video src:', video.querySelector('source').src);
+                console.log('Video dimensions:', video.offsetWidth, 'x', video.offsetHeight);
+                console.log('Video z-index:', window.getComputedStyle(video).zIndex);
+                
+                video.addEventListener('loadstart', function() {
+                    console.log('Video loading started');
+                });
+                
+                video.addEventListener('canplay', function() {
+                    console.log('Video can play');
+                });
+                
+                video.addEventListener('error', function(e) {
+                    console.error('Video error:', e);
+                    console.error('Video error details:', video.error);
+                });
+                
+                video.addEventListener('loadeddata', function() {
+                    console.log('Video data loaded');
+                });
+                
+                // Force video to play
+                video.play().then(() => {
+                    console.log('Video play started successfully');
+                }).catch((error) => {
+                    console.error('Video play failed:', error);
+                });
+            } else {
+                console.error('Video element not found');
+            }
+        });
+    </script>
 </body>
 </html>

@@ -21,8 +21,11 @@
         left: 0;
         width: 100%;
         height: 100vh;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-        opacity: 0.05;
+        background: 
+            radial-gradient(ellipse at top, rgba(152, 240, 248, 0.8) 0%, transparent 50%),
+            radial-gradient(ellipse at bottom, rgba(252, 192, 162, 0.6) 0%, transparent 50%),
+            linear-gradient(180deg, #f8fafc 0%, #ffffff 50%, #fef7f0 100%);
+        opacity: 1;
         z-index: -1;
         animation: gradientShift 15s ease infinite;
     }
@@ -38,7 +41,7 @@
         top: 0;
         left: 0;
         right: 0;
-        background: rgba(255, 255, 255, 0.8);
+        background: rgba(255, 255, 255, 0);
         backdrop-filter: blur(10px);
         border-bottom: 1px solid var(--border-divider);
         z-index: 1000;
@@ -79,14 +82,18 @@
     
     /* Main Content */
     .main-content {
-        padding-top: 80px;
+        padding-top: 120px;
+        padding-bottom: 120px;
     }
     
     /* Hero Section */
     .hero-section {
-        padding: var(--space-3xl) var(--space-2xl) var(--space-2xl);
+        padding: var(--space-4xl) var(--space-2xl) var(--space-3xl); /* Increased top padding */
         text-align: center;
         position: relative;
+        min-height: 85vh; /* Increased from 75vh */
+        display: flex;
+        align-items: center;
     }
     
     .hero-container {
@@ -97,31 +104,26 @@
     .badge {
         display: inline-block;
         padding: var(--space-xs) var(--space-md);
-        background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
-        /* border: 1px solid rgba(99, 102, 241, 0.2); */
-        border-radius: var(--radius-lg);
+        /*background: linear-gradient(135deg, rgba(99, 101, 241, 0), rgba(138, 92, 246, 0));
+        border: 1px solid rgba(99, 101, 241, 0.897);
+        border-radius: var(--radius-lg);*/
         font-size: var(--font-size-sm);
         font-weight: var(--font-weight-medium);
         color: var(--info);
-        margin-bottom: var(--space-2xl);
+        margin-bottom: var(--space-md);
         animation: fadeInUp 0.6s ease;
     }
     
     .hero-title {
         font-size: 4.5rem;
-        font-weight: var(--font-weight-extrabold);
+        font-weight: var(--font-weight-bold);
         line-height: 1.1;
         margin-bottom: var(--space-xl);
         color: var(--text-primary);
         animation: fadeInUp 0.6s ease 0.1s both;
     }
     
-    .gradient-text {
-        background: linear-gradient(135deg, var(--info), var(--success));
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
+
     
     .hero-subtitle {
         font-size: var(--font-size-xl);
@@ -257,7 +259,7 @@
     
     /* Features Section */
     .features-section {
-        padding: var(--space-3xl) var(--space-2xl);
+        padding: 120px 0px 120px 0px;
         background: var(--bg-gray);
     }
     
@@ -331,7 +333,7 @@
     
     /* CTA Section */
     .cta-section {
-        padding: var(--space-3xl) var(--space-2xl);
+        padding: 120px 0px 120px 0px;
         text-align: center;
         background: linear-gradient(135deg, var(--info), var(--success));
         color: var(--text-inverse);
@@ -397,9 +399,15 @@
             padding: 0 var(--space-md);
         }
         
-        .hero-section {
-            padding: var(--space-2xl) var(--space-md) var(--space-3xl);
+        .main-content {
+        padding-top: 100px; /* Slightly less on mobile */
         }
+    
+        .hero-section {
+            padding: var(--space-3xl) var(--space-md) var(--space-4xl); /* Increased mobile padding */
+            min-height: 80vh; /* Adjusted for mobile */
+        }
+
         
         .hero-title {
             font-size: 2.5rem;

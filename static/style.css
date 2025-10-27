@@ -128,7 +128,7 @@ button:disabled {
 }
 
 /* Secondary Buttons */
-.logout-btn, .reset-btn {
+.logout-btn, .reset-btn, .share-btn {
     background: var(--primary-light);
     padding: var(--space-xs) var(--space-md);
     font-size: var(--font-size-sm);
@@ -136,7 +136,7 @@ button:disabled {
     margin-top: var(--space-sm);
 }
 
-.logout-btn:hover, .reset-btn:hover {
+.logout-btn:hover, .reset-btn:hover, .share-btn:hover {
     background: #4B5563;
     box-shadow: var(--shadow-lg);
 }
@@ -679,6 +679,7 @@ button:disabled {
     }
     
 }
+
 
 /* Custom tooltip styles */
 .custom-tooltip {

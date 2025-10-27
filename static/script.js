@@ -178,6 +178,30 @@ function resetAssessment() {
     });
 }
 
+// ==================== SHARE RESULTS ====================
+
+function shareResults() {
+    const results = getResultsSummary();
+    const text = `My Spiritual Path Results:\n\n${results}\n\nTake the assessment: ${window.location.origin}`;
+    
+    if (navigator.share) {
+        navigator.share({ title: 'Spiritual Path Results', text: text });
+    } else {
+        navigator.clipboard.writeText(text);
+        alert('Results copied to clipboard!');
+    }
+}
+
+function getResultsSummary() {
+    const cards = document.querySelectorAll('.result-card');
+    return Array.from(cards).map((card, i) => {
+        const title = card.querySelector('h3').textContent;
+        const percentage = card.querySelector('.result-percentage').textContent;
+        return `${i+1}. ${title} (${percentage})`;
+    }).join('\n');
+}
+
+
 // ==================== CHAT FUNCTIONALITY ====================
 
 var chatHistories = {};

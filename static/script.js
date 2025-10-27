@@ -73,7 +73,7 @@ function showQuestion(questionIndex) {
     
     currentQuestion = questionIndex;
     document.getElementById('questionCounter').textContent = 'Question ' + questionIndex + ' of ' + totalQuestions;
-    document.getElementById('progressBar').style.width = (questionIndex / totalQuestions) * 100 + '%';
+    document.getElementById('progressBar').style.width = ((questionIndex - 1) / (totalQuestions - 1)) * 100 + '%';
     updateNavigationButtons();
 }
 

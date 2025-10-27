@@ -273,7 +273,7 @@ button:disabled {
 
 .progress-bar {
     background: var(--bg-gray);
-    height: 8px;
+    height: 6px;
     border-radius: 4px;
     overflow: hidden;
     margin-bottom: var(--space-lg);

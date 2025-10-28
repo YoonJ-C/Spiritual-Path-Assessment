@@ -426,13 +426,6 @@ if (document.readyState === 'loading') {
     initializeSpeechRecognition();
 }
 
-// Initialize on page load
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeSpeechRecognition);
-} else {
-    initializeSpeechRecognition();
-}
-
 // Make tooltips appear instantly on hover
 document.addEventListener('DOMContentLoaded', function() {
     const micButtons = document.querySelectorAll('button[title]');

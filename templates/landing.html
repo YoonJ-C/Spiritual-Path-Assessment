@@ -15,7 +15,7 @@
     <nav class="navbar">
         <div class="nav-container">
             <div class="logo"> <i class="fa-solid fa-compass"></i> Spiritual Path</div>
-            <a href="/login" class="nav-cta">Start Assessment</a>
+            <!-- <a href="/login" class="nav-cta">Start Assessment</a> -->
         </div>
     </nav>
 
@@ -61,23 +61,23 @@
                 <div class="features-grid">
                     <div class="feature-card">
                         <div class="feature-icon-wrapper">
-                            <div class="feature-icon">🌈</div>
+                            <img src="{{ url_for('static', filename='images/icon3.png') }}" alt="ring icon" class="feature-icon-img">
                         </div>
                         <h3>Your Spiritual Dimensions</h3>
                         <p>Understand your current spiritual development across multiple dimensions and uncover hidden aspects of your journey.</p>
                     </div>
-
+                    
                     <div class="feature-card">
                         <div class="feature-icon-wrapper">
-                            <div class="feature-icon">💡</div>
+                            <img src="{{ url_for('static', filename='images/icon2.png') }}" alt="round abstract icon" class="feature-icon-img">
                         </div>
                         <h3>Personalized Recommendations</h3>
                         <p>Get specific guidance tailored to your unique spiritual path, beliefs, and goals for meaningful growth.</p>
                     </div>
-
+                    
                     <div class="feature-card">
                         <div class="feature-icon-wrapper">
-                            <div class="feature-icon">🚀</div>
+                            <img src="{{ url_for('static', filename='images/icon1.png') }}" alt="star shaped icon" class="feature-icon-img">
                         </div>
                         <h3>Growth Opportunities</h3>
                         <p>Identify areas for spiritual growth and receive practical steps to deepen your practice and understanding.</p>
@@ -90,7 +90,7 @@
             <div class="cta-container">
                 <h2>Ready to begin your journey?</h2>
                 <p>Start your spiritual path assessment today</p>
-                <a href="/login" class="btn-secondary">
+                <a href="/login" class="btn-primary">
                     Get Started Now
                     <span class="arrow">→</span>
                 </a>
@@ -103,44 +103,5 @@
             <p>© 2025 Spiritual Path Assessment. Empowering your spiritual journey.</p>
         </div>
     </footer>
-
-    <script>
-        // Debug video loading
-        document.addEventListener('DOMContentLoaded', function() {
-            const video = document.querySelector('.hero-video');
-            if (video) {
-                console.log('Video element found:', video);
-                console.log('Video src:', video.querySelector('source').src);
-                console.log('Video dimensions:', video.offsetWidth, 'x', video.offsetHeight);
-                console.log('Video z-index:', window.getComputedStyle(video).zIndex);
-                
-                video.addEventListener('loadstart', function() {
-                    console.log('Video loading started');
-                });
-                
-                video.addEventListener('canplay', function() {
-                    console.log('Video can play');
-                });
-                
-                video.addEventListener('error', function(e) {
-                    console.error('Video error:', e);
-                    console.error('Video error details:', video.error);
-                });
-                
-                video.addEventListener('loadeddata', function() {
-                    console.log('Video data loaded');
-                });
-                
-                // Force video to play
-                video.play().then(() => {
-                    console.log('Video play started successfully');
-                }).catch((error) => {
-                    console.error('Video play failed:', error);
-                });
-            } else {
-                console.error('Video element not found');
-            }
-        });
-    </script>
 </body>
 </html>

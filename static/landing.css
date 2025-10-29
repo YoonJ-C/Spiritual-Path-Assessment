@@ -183,7 +183,7 @@ body {
 }
 
 .btn-primary:hover {
-    background: linear-gradient(135deg, var(--success), var(--info));
+    background: linear-gradient(135deg, var(--background-color-2), var(--background-color-1));
     box-shadow: var(--shadow-xl);
 }
 

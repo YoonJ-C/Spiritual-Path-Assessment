@@ -9,27 +9,69 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
-    <div class="container">
+    <div class="{% if not logged_in %}auth-container{% else %}assessment-container{% endif %}">
         <div class="nav-header">
             <a href="/" class="back-link">← Back to Home</a>
         </div>
         {% if not logged_in %}
             <!-- Login/Signup Form -->
-            <h1><span class="icon"></span>Spiritual Path Finder</h1>
+            <h2><span class="icon"></span>Spiritual Path Finder</h2>
             <p>{{ 'Begin your journey of self-discovery' if is_signup else 'Welcome back, seeker!' }}</p>
             
+            {% if verify_success %}
+            <div class="success-msg" style="padding: 15px; margin-bottom: 20px; border-radius: 8px;">
+                ✅ Email verified successfully! You can now sign in.
+            </div>
+            {% endif %}
+            
+            {% if verify_error %}
+            <div class="error-msg" style="padding: 15px; margin-bottom: 20px; border-radius: 8px;">
+                ⚠️ {{ verify_error }}
+            </div>
+            {% endif %}
+            
+            {% if reset_error %}
+            <div class="error-msg" style="padding: 15px; margin-bottom: 20px; border-radius: 8px;">
+                ⚠️ {{ reset_error }}
+            </div>
+            {% endif %}
+            
             <div class="auth-form">
-                <input type="text" id="authUsername" placeholder="Username">
+                {% if not is_forgot_password %}
+                <input type="text" id="authUsername" placeholder="User name">
+                {% if is_signup %}
+                <input type="email" id="authEmail" placeholder="Email">
+                {% endif %}
                 <input type="password" id="authPassword" placeholder="Password">
                 <button onclick="authenticate()">{{ 'Sign Up' if is_signup else 'Sign In' }}</button>
                 <div id="result"></div>
+                {% if not is_signup %}
+                <p class="switch-link" onclick="window.location.href='/forgot-password'">
+                    Forgot Password?
+                </p>
+                {% endif %}
                 <p class="switch-link" onclick="switchAuth()">
                     {{ 'Already have an account? Sign In' if is_signup else 'New here? Sign Up' }}
                 </p>
+                {% else %}
+                {% if show_reset_form %}
+                <input type="password" id="resetPassword" placeholder="New Password">
+                <input type="hidden" id="resetToken" value="{{ reset_token }}">
+                <button onclick="submitPasswordReset()">Reset Password</button>
+                <div id="result"></div>
+                {% else %}
+                <input type="email" id="resetEmail" placeholder="Email">
+                <button onclick="resetPassword()">Send Reset Link</button>
+                <div id="result"></div>
+                {% endif %}
+                <p class="switch-link" onclick="window.location.href='/login'">
+                    Back to Sign In
+                </p>
+                {% endif %}
             </div>
         {% else %}
             <!-- Assessment Interface -->
-            <h1>{{ title }}</h1>
+            <h2>{{ title }}</h2>
             <p>{{ message }} <i class="fas fa-heart"></i> </p>
             
             {% if not has_results %}

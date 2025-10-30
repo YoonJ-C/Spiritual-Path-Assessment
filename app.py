@@ -9,6 +9,8 @@ from flask import Flask, render_template, request, jsonify, session, redirect, u
 from werkzeug.security import generate_password_hash, check_password_hash
 import json
 import os
+import re
+import secrets
 from dotenv import load_dotenv
 from together import Together
 from rag_utils import load_religions_from_csv, prepare_religion_rag_context
@@ -17,10 +19,10 @@ from openai import OpenAI
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = 'spiritual-journey-finder-2024'
+app.secret_key = os.getenv('SECRET_KEY', secrets.token_hex(32))
 
 # Session configuration for production deployment
-app.config['SESSION_COOKIE_SECURE'] = False  # For HTTP
+app.config['SESSION_COOKIE_SECURE'] = os.getenv('FLASK_ENV') == 'production'
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 hour
@@ -149,8 +151,49 @@ RELIGIONS = {
     "indigenous": {"name": "Indigenous Spirituality", "description": "Traditional practices honoring ancestors and land.", "practices": "Ceremonies, storytelling, seasonal rituals", "core_beliefs": "Land connection, ancestor veneration, reciprocity"}
 }
 
+# Email verification tokens (in-memory for simplicity)
+VERIFICATION_TOKENS = {}
+
+def validate_email(email):
+    """Basic email validation"""
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return re.match(pattern, email) is not None
+
+def send_verification_email(email, token):
+    """Send verification email (dev mode: prints to console)"""
+    verification_url = f"{request.host_url}verify-email?token={token}"
+    message = f"""
+    Hello!
+    
+    Please verify your email by clicking this link:
+    {verification_url}
+    
+    Or visit: {request.host_url}verify-email?token={token}
+    """
+    print(f"[EMAIL] To: {email}")
+    print(f"[EMAIL] Subject: Verify your email")
+    print(f"[EMAIL] Body:\n{message}")
+    # In production, replace with actual SMTP sending
+    return True
+
+def send_password_reset_email(email, token):
+    """Send password reset email (dev mode: prints to console)"""
+    reset_url = f"{request.host_url}reset-password?token={token}"
+    message = f"""
+    Hello!
+    
+    You requested a password reset. Click this link:
+    {reset_url}
+    
+    Or visit: {request.host_url}reset-password?token={token}
+    """
+    print(f"[EMAIL] To: {email}")
+    print(f"[EMAIL] Subject: Password Reset Request")
+    print(f"[EMAIL] Body:\n{message}")
+    # In production, replace with actual SMTP sending
+    return True
+
 def load_users():
-    """Load users from JSON file"""
     try:
         if os.path.exists(USERS_FILE):
             with open(USERS_FILE, 'r') as f:
@@ -177,6 +220,8 @@ def initialize_default_user():
     if not users:  # Only create if no users exist
         users['test'] = {
             'password': generate_password_hash('test'),
+            'email': 'test@example.com',
+            'verified': True,
             'answers': [],
             'results': []
         }
@@ -247,26 +292,33 @@ def login():
                 return jsonify({"success": False, "message": "Username and password required"}), 400
             
             users = load_users()
-            if username in users:
-                stored = users[username]['password']
+            if username not in users:
+                return jsonify({"success": False, "message": "Invalid credentials"}), 401
             
-                # 1) Try hash-based verification (works for any Werkzeug scheme)
-                try:
-                    if check_password_hash(stored, password):
-                        session['username'] = username
-                        return jsonify({"success": True})
-                except Exception:
-                    pass  # if stored isn't a hash string, we'll try plaintext next
+            user_data = users[username]
             
-                # 2) Legacy plaintext fallback → upgrade to a hash
-                if stored == password:
-                    users[username]['password'] = generate_password_hash(password)
-                    if not save_users(users):
-                        return jsonify({"success": False, "message": "Error saving data"}), 500
+            # Check if email is verified
+            if not user_data.get('verified', True):  # Default True for backward compatibility
+                return jsonify({"success": False, "message": "Please verify your email first. Check your inbox."}), 403
+            
+            stored = user_data['password']
+            
+            # Try hash-based verification first
+            if stored.startswith(('scrypt:', 'pbkdf2:')):
+                if check_password_hash(stored, password):
                     session['username'] = username
+                    session.permanent = True
                     return jsonify({"success": True})
+            # Legacy plaintext fallback
+            elif stored == password:
+                users[username]['password'] = generate_password_hash(password)
+                if not save_users(users):
+                    return jsonify({"success": False, "message": "Error saving data"}), 500
+                session['username'] = username
+                session.permanent = True
+                return jsonify({"success": True})
             
-            return jsonify({"success": False, "message": "Invalid credentials"})
+            return jsonify({"success": False, "message": "Invalid credentials"}), 401
         except Exception as e:
             print(f"Login error: {e}")
             return jsonify({"success": False, "message": "Server error"}), 500
@@ -283,18 +335,44 @@ def signup():
                 
             username = data.get('username', '').strip()
             password = data.get('password', '')
+            email = data.get('email', '').strip().lower()
             
             if not username or not password:
                 return jsonify({"success": False, "message": "Username and password required"}), 400
             
+            if not email:
+                return jsonify({"success": False, "message": "Email is required"}), 400
+            
+            if not validate_email(email):
+                return jsonify({"success": False, "message": "Invalid email format"}), 400
+            
             users = load_users()
             
             if username in users:
-                return jsonify({"success": False, "message": "Username already exists"})
+                return jsonify({"success": False, "message": "Username already exists"}), 409
             
-            # Create new user with hashed password
+            # Check if email already exists
+            for user_data in users.values():
+                if user_data.get('email') == email:
+                    return jsonify({"success": False, "message": "Email already registered"}), 409
+            
+            # Generate verification token
+            token = secrets.token_urlsafe(32)
+            VERIFICATION_TOKENS[token] = {
+                'username': username,
+                'email': email,
+                'password': password,
+                'timestamp': os.path.getmtime(USERS_FILE) if os.path.exists(USERS_FILE) else 0
+            }
+            
+            # Send verification email
+            send_verification_email(email, token)
+            
+            # Create user with verified status (auto-verify in dev mode)
             users[username] = {
                 'password': generate_password_hash(password),
+                'email': email,
+                'verified': True,  # Auto-verify in dev mode
                 'answers': [],
                 'results': []
             }
@@ -302,13 +380,143 @@ def signup():
             if not save_users(users):
                 return jsonify({"success": False, "message": "Error saving user data"}), 500
                 
-            session['username'] = username
-            return jsonify({"success": True})
+            return jsonify({
+                "success": True, 
+                "message": "Account created! Please check your email to verify your account.",
+                "verification_sent": True
+            })
         except Exception as e:
             print(f"Signup error: {e}")
             return jsonify({"success": False, "message": "Server error"}), 500
     
     return render_template("index.html", logged_in=False, is_signup=True)
+
+@app.route("/forgot-password", methods=["GET", "POST"])
+def forgot_password():
+    if request.method == "POST":
+        try:
+            data = request.get_json()
+            if not data:
+                return jsonify({"success": False, "message": "Invalid request"}), 400
+                
+            email = data.get('email', '').strip().lower()
+            
+            if not email:
+                return jsonify({"success": False, "message": "Email is required"}), 400
+            
+            if not validate_email(email):
+                return jsonify({"success": False, "message": "Invalid email format"}), 400
+            
+            users = load_users()
+            
+            # Find user by email
+            user_found = None
+            for username, user_data in users.items():
+                if user_data.get('email') == email:
+                    user_found = username
+                    break
+            
+            if not user_found:
+                # Don't reveal that email doesn't exist (security best practice)
+                return jsonify({
+                    "success": True, 
+                    "message": "If that email exists, a reset link has been sent."
+                })
+            
+            # Generate reset token
+            token = secrets.token_urlsafe(32)
+            VERIFICATION_TOKENS[token] = {
+                'username': user_found,
+                'email': email,
+                'type': 'password_reset',
+                'timestamp': os.path.getmtime(USERS_FILE) if os.path.exists(USERS_FILE) else 0
+            }
+            
+            # Send reset email
+            send_password_reset_email(email, token)
+            
+            return jsonify({
+                "success": True, 
+                "message": "Password reset link sent to your email. Please check your inbox."
+            })
+        except Exception as e:
+            print(f"Password reset error: {e}")
+            return jsonify({"success": False, "message": "Server error"}), 500
+    
+    return render_template("index.html", logged_in=False, is_signup=False, is_forgot_password=True)
+
+@app.route("/reset-password")
+def reset_password_page():
+    """Handle password reset via token - show form to enter new password"""
+    token = request.args.get('token')
+    if not token or token not in VERIFICATION_TOKENS:
+        return render_template("index.html", logged_in=False, is_signup=False, 
+                             reset_error="Invalid or expired reset token"), 400
+    
+    token_data = VERIFICATION_TOKENS[token]
+    if token_data.get('type') != 'password_reset':
+        return render_template("index.html", logged_in=False, is_signup=False, 
+                             reset_error="Invalid token type"), 400
+    
+    # Store token in session temporarily for password reset form
+    session['reset_token'] = token
+    return render_template("index.html", logged_in=False, is_signup=False, 
+                         show_reset_form=True, reset_token=token)
+
+@app.route("/reset-password-submit", methods=["POST"])
+def reset_password_submit():
+    """Handle password reset submission"""
+    try:
+        data = request.get_json()
+        token = data.get('token')
+        new_password = data.get('password', '')
+        
+        if not token or token not in VERIFICATION_TOKENS:
+            return jsonify({"success": False, "message": "Invalid or expired token"}), 400
+        
+        if not new_password:
+            return jsonify({"success": False, "message": "Password is required"}), 400
+        
+        token_data = VERIFICATION_TOKENS[token]
+        if token_data.get('type') != 'password_reset':
+            return jsonify({"success": False, "message": "Invalid token type"}), 400
+        
+        # Reset password
+        users = load_users()
+        username = token_data['username']
+        if username in users:
+            users[username]['password'] = generate_password_hash(new_password)
+            save_users(users)
+            del VERIFICATION_TOKENS[token]
+            session.pop('reset_token', None)
+            return jsonify({"success": True, "message": "Password reset successfully"})
+        
+        return jsonify({"success": False, "message": "User not found"}), 404
+    except Exception as e:
+        print(f"Password reset submit error: {e}")
+        return jsonify({"success": False, "message": "Server error"}), 500
+
+@app.route("/verify-email")
+def verify_email():
+    """Handle email verification"""
+    token = request.args.get('token')
+    if not token or token not in VERIFICATION_TOKENS:
+        return render_template("index.html", logged_in=False, is_signup=False, 
+                             verify_error="Invalid or expired verification token"), 400
+    
+    token_data = VERIFICATION_TOKENS[token]
+    users = load_users()
+    username = token_data['username']
+    
+    if username in users:
+        users[username]['verified'] = True
+        save_users(users)
+        del VERIFICATION_TOKENS[token]
+        return render_template("index.html", logged_in=False, is_signup=False, 
+                             verify_success=True)
+    
+    return render_template("index.html", logged_in=False, is_signup=False, 
+                         verify_error="User not found"), 404
 
 @app.route("/logout")
 def logout():

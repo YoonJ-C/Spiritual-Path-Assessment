@@ -8,6 +8,7 @@ function sanitizeReligionName(name) {
 function authenticate() {
     const username = document.getElementById('authUsername').value.trim();
     const password = document.getElementById('authPassword').value;
+    const email = document.getElementById('authEmail') ? document.getElementById('authEmail').value.trim() : '';
     
     if (!username || !password) {
         document.getElementById('result').innerHTML = 
@@ -15,27 +16,125 @@ function authenticate() {
         return;
     }
     
+    if (window.location.pathname === '/signup' && !email) {
+        document.getElementById('result').innerHTML = 
+            '<p class="error-msg">⚠️ Please fill in all fields</p>';
+        return;
+    }
+    
     const endpoint = window.location.pathname === '/signup' ? '/signup' : '/login';
+    const body = window.location.pathname === '/signup' 
+        ? {username, password, email} 
+        : {username, password};
     
     fetch(endpoint, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({username, password})
+        body: JSON.stringify(body),
+        credentials: 'same-origin'
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => Promise.reject(err));
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
-            window.location.href = '/assessment';
+            if (data.verification_sent) {
+                document.getElementById('result').innerHTML = 
+                    '<p class="success-msg">✅ ' + (data.message || 'Account created! Please check your email to verify.') + '</p>';
+            } else {
+                window.location.href = '/assessment';
+            }
         } else {
             document.getElementById('result').innerHTML = 
-                `<p class="error-msg">${data.message}</p>`;
+                `<p class="error-msg">${data.message || 'Authentication failed'}</p>`;
         }
+    })
+    .catch(error => {
+        document.getElementById('result').innerHTML = 
+            `<p class="error-msg">${error.message || 'Network error. Please try again.'}</p>`;
     });
 }
 
 function switchAuth() {
     const newPath = window.location.pathname === '/signup' ? '/login' : '/signup';
     window.location.href = newPath;
+}
+
+function resetPassword() {
+    const email = document.getElementById('resetEmail').value.trim();
+    
+    if (!email) {
+        document.getElementById('result').innerHTML = 
+            '<p class="error-msg">⚠️ Please enter your email</p>';
+        return;
+    }
+    
+    fetch('/forgot-password', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({email}),
+        credentials: 'same-origin'
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => Promise.reject(err));
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            document.getElementById('result').innerHTML = 
+                '<p class="success-msg">✅ Password reset link sent! Check your email (or server console in dev mode).</p>';
+        } else {
+            document.getElementById('result').innerHTML = 
+                `<p class="error-msg">${data.message || 'Failed to send reset link'}</p>`;
+        }
+    })
+    .catch(error => {
+        document.getElementById('result').innerHTML = 
+            `<p class="error-msg">${error.message || 'Network error. Please try again.'}</p>`;
+    });
+}
+
+function submitPasswordReset() {
+    const token = document.getElementById('resetToken').value;
+    const password = document.getElementById('resetPassword').value;
+    
+    if (!password) {
+        document.getElementById('result').innerHTML = 
+            '<p class="error-msg">⚠️ Please enter a new password</p>';
+        return;
+    }
+    
+    fetch('/reset-password-submit', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({token, password}),
+        credentials: 'same-origin'
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => Promise.reject(err));
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            document.getElementById('result').innerHTML = 
+                '<p class="success-msg">✅ Password reset successfully! Redirecting to login...</p>';
+            setTimeout(() => window.location.href = '/login', 1500);
+        } else {
+            document.getElementById('result').innerHTML = 
+                `<p class="error-msg">${data.message || 'Failed to reset password'}</p>`;
+        }
+    })
+    .catch(error => {
+        document.getElementById('result').innerHTML = 
+            `<p class="error-msg">${error.message || 'Network error. Please try again.'}</p>`;
+    });
 }
 
 // ==================== ASSESSMENT ====================
@@ -438,7 +537,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const tooltip = document.createElement('div');
         tooltip.className = 'custom-tooltip';
         tooltip.textContent = tooltipText;
-        tooltip.className = 'custom-tooltip';
         
         // Add tooltip to button
         button.style.position = 'relative';

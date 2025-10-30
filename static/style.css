@@ -23,8 +23,11 @@ body {
     padding: var(--space-sm);
 }
 
+
 /* ===== LAYOUT ===== */
-.container {
+
+/* Assessment container - keep original width for assessment/results */
+.assessment-container {
     background: var(--bg-white);
     border-radius: var(--radius-xl);
     padding: var(--space-lg);
@@ -47,7 +50,13 @@ h1 {
     font-size: var(--font-size-4xl);
     margin-bottom: var(--space-xs);
     text-align: center;
-    font-weight: var(--font-weight-extrabold);
+    font-weight: var(--font-weight-bold);
+}
+
+h2 {
+    font-size: var(--font-size-2xl);  /* or var(--font-size-2xl) for even smaller */
+    text-align: center;
+    margin-bottom: var(--space-xs);
 }
 
 h3 {
@@ -79,7 +88,7 @@ p {
 }
 
 /* ===== FORM ELEMENTS ===== */
-input[type="text"], input[type="password"] {
+input[type="text"], input[type="password"], input[type="email"] {
     width: 100%;
     padding: var(--space-sm) var(--space-lg);
     font-size: var(--font-size-base);
@@ -156,6 +165,20 @@ button:disabled {
 }
 
 /* Auth Form */
+/* Auth-specific container - narrower for login/signup/forgot-password */
+.auth-container {
+    background: var(--bg-white);
+    border-radius: var(--radius-xl);
+    padding: var(--space-lg);
+    box-shadow: var(--shadow-xl);
+    max-width: 400px;  /* Narrower for auth forms */
+    width: 100%;
+    animation: slideIn var(--transition-slow) ease;
+    max-height: 95vh;
+    overflow-y: auto;
+    text-align: center;
+}
+
 .auth-form input {
     width: 100%;
     margin-bottom: var(--space-sm);
@@ -165,14 +188,22 @@ button:disabled {
     width: 100%;
 }
 
+#result {
+    margin-bottom: var(--space-md);  /* 16px bottom margin only */
+    margin-top: 0;
+    padding: 0;
+}
+
 .switch-link {
     color: var(--text-primary);
     text-decoration: none;
     cursor: pointer;
-    font-weight: var(--font-weight-medium);
-    margin-top: var(--space-sm);
-    display: inline-block;
+    font-weight: var(--font-weight-regular);
+    /* margin-top: 2px; */
+    display: block;
+    text-align: center;
     transition: color var(--transition-fast);
+    font-size: var(--font-size-sm);
 }
 
 .switch-link:hover {
@@ -622,6 +653,7 @@ button:disabled {
     display: inline-flex;
     align-items: center;
     gap: 4px;
+    
 }
 
 .back-link:hover {
@@ -653,7 +685,7 @@ button:disabled {
         font-size: var(--font-size-base);
     }
     
-    input[type="text"], input[type="password"] {
+    input[type="text"], input[type="password"], input[type="email"] {
         padding: var(--space-md) var(--space-lg);
         font-size: var(--font-size-lg);
     }

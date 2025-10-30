@@ -199,20 +199,42 @@ body {
    FEATURES SECTION
    ========================================================================== */
 
-.features-section {
+/* .features-section {
     width: 100vw;
-    height: 100vh;
-    background: linear-gradient(to bottom, 
-        rgb(255, 255, 255) 0%, 
-        rgb(255, 255, 255) 5%, 
-        rgb(226, 218, 250) 30%, 
-        rgb(219, 239, 253) 80%, 
-        rgb(255, 255, 255) 95%, 
-        rgb(255, 255, 255) 100%);
+    min-height: 100vh;
+    background: url("images/Abstract%20Color%20Gradient.png") center/cover no-repeat;
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 2;
+} */
+
+/* landing.css */
+.features-section {
+    width: 100vw;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    z-index: 2;
+
+    background:  radial-gradient(
+            160% 130% at 50% -20%,
+            rgba(219, 239, 253, 1) 0%,
+            rgba(219, 239, 253, 0.65) 45%,
+            rgba(255, 255, 255, 0.75) 65%,
+            rgba(255, 255, 255, 1) 82%,
+            rgba(255, 255, 255, 1) 100%
+        ),
+        radial-gradient(
+            170% 170% at 50% 140%,
+            rgba(246, 228, 255, 0.95) 0%,
+            rgba(246, 228, 255, 0.55) 55%,
+            rgba(246, 228, 255, 0.15) 78%,
+            rgba(255, 255, 255, 1) 100%
+        );
 }
 
 .section-container {

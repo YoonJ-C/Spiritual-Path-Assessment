@@ -3,9 +3,90 @@ function sanitizeReligionName(name) {
     return name.replace(/\s+/g, '-');
 }
 
+// ==================== FIREBASE AUTHENTICATION ====================
+
+// Google Sign-In with Firebase
+async function signInWithGoogle() {
+    if (!window.firebaseEnabled || !window.firebaseAuth) {
+        document.getElementById('result').innerHTML = 
+            '<p class="error-msg">⚠️ Firebase not configured</p>';
+        return;
+    }
+    
+    const provider = new firebase.auth.GoogleAuthProvider();
+    
+    try {
+        const result = await window.firebaseAuth.signInWithPopup(provider);
+        const user = result.user;
+        
+        // Get ID token to send to backend
+        const idToken = await user.getIdToken();
+        
+        // Send to backend for session creation
+        const endpoint = window.location.pathname === '/signup' ? '/signup' : '/login';
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({idToken}),
+            credentials: 'same-origin'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            window.location.href = '/assessment';
+        } else {
+            document.getElementById('result').innerHTML = 
+                `<p class="error-msg">${data.message || 'Authentication failed'}</p>`;
+        }
+    } catch (error) {
+        console.error('Google Sign-In Error:', error);
+        document.getElementById('result').innerHTML = 
+            `<p class="error-msg">⚠️ ${error.message || 'Google Sign-In failed'}</p>`;
+    }
+}
+
+// Firebase Email/Password Authentication
+async function authenticateWithFirebase(email, password, isSignup) {
+    if (!window.firebaseEnabled || !window.firebaseAuth) {
+        return null; // Fall back to legacy auth
+    }
+    
+    try {
+        let userCredential;
+        
+        if (isSignup) {
+            // Create new user with Firebase
+            userCredential = await window.firebaseAuth.createUserWithEmailAndPassword(email, password);
+            
+            // Send email verification
+            await userCredential.user.sendEmailVerification();
+        } else {
+            // Sign in existing user
+            userCredential = await window.firebaseAuth.signInWithEmailAndPassword(email, password);
+            
+            // Check if email is verified
+            if (!userCredential.user.emailVerified) {
+                document.getElementById('result').innerHTML = 
+                    '<p class="error-msg">⚠️ Please verify your email first. Check your inbox.</p>';
+                await window.firebaseAuth.signOut();
+                return null;
+            }
+        }
+        
+        // Get ID token
+        const idToken = await userCredential.user.getIdToken();
+        return idToken;
+        
+    } catch (error) {
+        console.error('Firebase Auth Error:', error);
+        throw error;
+    }
+}
+
 // ==================== AUTHENTICATION ====================
 
-function authenticate() {
+async function authenticate() {
     const username = document.getElementById('authUsername').value.trim();
     const password = document.getElementById('authPassword').value;
     const email = document.getElementById('authEmail') ? document.getElementById('authEmail').value.trim() : '';
@@ -22,8 +103,48 @@ function authenticate() {
         return;
     }
     
-    const endpoint = window.location.pathname === '/signup' ? '/signup' : '/login';
-    const body = window.location.pathname === '/signup' 
+    const isSignup = window.location.pathname === '/signup';
+    const endpoint = isSignup ? '/signup' : '/login';
+    
+    // Try Firebase authentication first if available and email is provided
+    if (window.firebaseEnabled && email) {
+        try {
+            const idToken = await authenticateWithFirebase(email, password, isSignup);
+            
+            if (!idToken) {
+                return; // Error already displayed
+            }
+            
+            // Send token to backend
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({idToken}),
+                credentials: 'same-origin'
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                if (isSignup) {
+                    document.getElementById('result').innerHTML = 
+                        '<p class="success-msg">✅ Account created! Please check your email to verify.</p>';
+                } else {
+                    window.location.href = '/assessment';
+                }
+            } else {
+                document.getElementById('result').innerHTML = 
+                    `<p class="error-msg">${data.message || 'Authentication failed'}</p>`;
+            }
+            return;
+        } catch (error) {
+            console.error('Firebase auth error:', error);
+            // Fall through to legacy auth
+        }
+    }
+    
+    // Legacy authentication (username/password)
+    const body = isSignup 
         ? {username, password, email} 
         : {username, password};
     

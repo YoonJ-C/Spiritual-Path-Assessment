@@ -188,6 +188,56 @@ button:disabled {
     width: 100%;
 }
 
+/* Google Sign-In Button */
+.google-signin-btn {
+    width: 100%;
+    padding: var(--space-sm) var(--space-lg);
+    background: white;
+    color: #444;
+    border: 1px solid #ddd;
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-base);
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    transition: all var(--transition-fast);
+    margin-bottom: var(--space-md);
+}
+
+.google-signin-btn:hover {
+    background: #f8f8f8;
+    border-color: #ccc;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.google-signin-btn svg {
+    flex-shrink: 0;
+}
+
+/* Divider for "or" between Google and email/password */
+.divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: var(--space-md) 0;
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+}
+
+.divider::before,
+.divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid #ddd;
+}
+
+.divider span {
+    padding: 0 var(--space-sm);
+}
+
 #result {
     margin-bottom: var(--space-md);  /* 16px bottom margin only */
     margin-top: 0;

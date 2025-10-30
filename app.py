@@ -15,6 +15,8 @@ from dotenv import load_dotenv
 from together import Together
 from rag_utils import load_religions_from_csv, prepare_religion_rag_context
 from openai import OpenAI
+import firebase_admin
+from firebase_admin import credentials, auth, firestore
 
 load_dotenv()
 
@@ -27,7 +29,33 @@ app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 hour
 
+# Initialize Firebase Admin SDK
+try:
+    firebase_cred_path = os.getenv('FIREBASE_CREDENTIALS_PATH', 'serviceAccountKey.json')
+    if os.path.exists(firebase_cred_path):
+        cred = credentials.Certificate(firebase_cred_path)
+        firebase_admin.initialize_app(cred)
+        db = firestore.client()
+        print("✅ Firebase initialized successfully")
+    else:
+        print(f"⚠️ Firebase credentials not found at {firebase_cred_path}")
+        db = None
+except Exception as e:
+    print(f"⚠️ Firebase initialization failed: {e}")
+    db = None
+
+# Firebase Web Config (for frontend)
+FIREBASE_CONFIG = {
+    'apiKey': os.getenv('FIREBASE_WEB_API_KEY'),
+    'authDomain': os.getenv('FIREBASE_AUTH_DOMAIN'),
+    'projectId': os.getenv('FIREBASE_PROJECT_ID'),
+    'storageBucket': os.getenv('FIREBASE_STORAGE_BUCKET', f"{os.getenv('FIREBASE_PROJECT_ID')}.appspot.com"),
+    'messagingSenderId': os.getenv('FIREBASE_MESSAGING_SENDER_ID'),
+    'appId': os.getenv('FIREBASE_APP_ID')
+}
+
 # File to store user data - defaults to current directory (writable in Docker)
+# Keep for backward compatibility during transition
 USERS_FILE = os.getenv("USERS_FILE", "users_data.json")
 
 # Together API for chatbot
@@ -193,6 +221,95 @@ def send_password_reset_email(email, token):
     # In production, replace with actual SMTP sending
     return True
 
+# ============================================================================
+# FIRESTORE HELPER FUNCTIONS
+# ============================================================================
+
+def get_user_by_uid(uid):
+    """Get user data from Firestore by Firebase UID"""
+    if not db:
+        return None
+    try:
+        user_ref = db.collection('users').document(uid)
+        user_doc = user_ref.get()
+        if user_doc.exists:
+            return user_doc.to_dict()
+        return None
+    except Exception as e:
+        print(f"Error getting user {uid}: {e}")
+        return None
+
+def create_or_update_user(uid, user_data):
+    """Create or update user in Firestore"""
+    if not db:
+        return False
+    try:
+        user_ref = db.collection('users').document(uid)
+        user_ref.set(user_data, merge=True)
+        return True
+    except Exception as e:
+        print(f"Error saving user {uid}: {e}")
+        return False
+
+def get_user_answers(uid):
+    """Get user's assessment answers from Firestore"""
+    if not db:
+        return []
+    try:
+        user_data = get_user_by_uid(uid)
+        return user_data.get('answers', []) if user_data else []
+    except Exception as e:
+        print(f"Error getting answers for {uid}: {e}")
+        return []
+
+def save_user_answers(uid, answers):
+    """Save user's assessment answers to Firestore"""
+    if not db:
+        return False
+    try:
+        user_ref = db.collection('users').document(uid)
+        user_ref.update({'answers': answers})
+        return True
+    except Exception as e:
+        print(f"Error saving answers for {uid}: {e}")
+        return False
+
+def get_user_results(uid):
+    """Get user's assessment results from Firestore"""
+    if not db:
+        return []
+    try:
+        user_data = get_user_by_uid(uid)
+        return user_data.get('results', []) if user_data else []
+    except Exception as e:
+        print(f"Error getting results for {uid}: {e}")
+        return []
+
+def save_user_results(uid, results):
+    """Save user's assessment results to Firestore"""
+    if not db:
+        return False
+    try:
+        user_ref = db.collection('users').document(uid)
+        user_ref.update({'results': results})
+        return True
+    except Exception as e:
+        print(f"Error saving results for {uid}: {e}")
+        return False
+
+def verify_firebase_token(id_token):
+    """Verify Firebase ID token and return decoded token"""
+    try:
+        decoded_token = auth.verify_id_token(id_token)
+        return decoded_token
+    except Exception as e:
+        print(f"Token verification error: {e}")
+        return None
+
+# ============================================================================
+# LEGACY JSON FILE FUNCTIONS (for backward compatibility)
+# ============================================================================
+
 def load_users():
     try:
         if os.path.exists(USERS_FILE):
@@ -259,22 +376,36 @@ def landing():
 
 @app.route("/assessment")
 def assessment():
-    if 'username' not in session:
+    # Check for Firebase user first, then legacy username
+    user_id = session.get('user_id')
+    username = session.get('username')
+    
+    if not user_id and not username:
         return redirect(url_for('login'))
     
-    users = load_users()
-    user_data = users.get(session['username'], {})
-    has_results = 'results' in user_data and user_data['results']
+    # Get user data from appropriate source
+    if user_id:
+        # Firebase user
+        user_data = get_user_by_uid(user_id) or {}
+        display_name = session.get('email', 'User')
+        has_results = 'results' in user_data and user_data['results']
+    else:
+        # Legacy user
+        users = load_users()
+        user_data = users.get(username, {})
+        display_name = username
+        has_results = 'results' in user_data and user_data['results']
     
     return render_template(
         "index.html", 
         title="Spiritual Path Finder", 
-        message=f"Welcome, {session['username']}!",
-        username=session['username'],
+        message=f"Welcome, {display_name}!",
+        username=display_name,
         logged_in=True,
         questions=QUESTIONS,
         has_results=has_results,
-        results=user_data.get('results', []) if has_results else []
+        results=user_data.get('results', []) if has_results else [],
+        firebase_config=FIREBASE_CONFIG
     )
 
 @app.route("/login", methods=["GET", "POST"])
@@ -284,46 +415,77 @@ def login():
             data = request.get_json()
             if not data:
                 return jsonify({"success": False, "message": "Invalid request"}), 400
+            
+            # Firebase authentication - verify ID token from frontend
+            id_token = data.get('idToken')
+            
+            if id_token:
+                # Firebase authentication flow
+                decoded_token = verify_firebase_token(id_token)
+                if not decoded_token:
+                    return jsonify({"success": False, "message": "Invalid authentication token"}), 401
                 
-            username = data.get('username', '').strip()
-            password = data.get('password', '')
-            
-            if not username or not password:
-                return jsonify({"success": False, "message": "Username and password required"}), 400
-            
-            users = load_users()
-            if username not in users:
-                return jsonify({"success": False, "message": "Invalid credentials"}), 401
-            
-            user_data = users[username]
-            
-            # Check if email is verified
-            if not user_data.get('verified', True):  # Default True for backward compatibility
-                return jsonify({"success": False, "message": "Please verify your email first. Check your inbox."}), 403
-            
-            stored = user_data['password']
-            
-            # Try hash-based verification first
-            if stored.startswith(('scrypt:', 'pbkdf2:')):
-                if check_password_hash(stored, password):
+                uid = decoded_token['uid']
+                email = decoded_token.get('email', '')
+                
+                # Check if user exists in Firestore, create if not
+                user_data = get_user_by_uid(uid)
+                if not user_data:
+                    # Create new user document
+                    create_or_update_user(uid, {
+                        'email': email,
+                        'answers': [],
+                        'results': [],
+                        'created_at': firestore.SERVER_TIMESTAMP
+                    })
+                
+                # Store UID in session
+                session['user_id'] = uid
+                session['email'] = email
+                session.permanent = True
+                return jsonify({"success": True})
+            else:
+                # Legacy username/password flow (backward compatibility)
+                username = data.get('username', '').strip()
+                password = data.get('password', '')
+                
+                if not username or not password:
+                    return jsonify({"success": False, "message": "Username and password required"}), 400
+                
+                users = load_users()
+                if username not in users:
+                    return jsonify({"success": False, "message": "Invalid credentials"}), 401
+                
+                user_data = users[username]
+                
+                # Check if email is verified
+                if not user_data.get('verified', True):
+                    return jsonify({"success": False, "message": "Please verify your email first. Check your inbox."}), 403
+                
+                stored = user_data['password']
+                
+                # Try hash-based verification first
+                if stored.startswith(('scrypt:', 'pbkdf2:')):
+                    if check_password_hash(stored, password):
+                        session['username'] = username
+                        session.permanent = True
+                        return jsonify({"success": True})
+                # Legacy plaintext fallback
+                elif stored == password:
+                    users[username]['password'] = generate_password_hash(password)
+                    if not save_users(users):
+                        return jsonify({"success": False, "message": "Error saving data"}), 500
                     session['username'] = username
                     session.permanent = True
                     return jsonify({"success": True})
-            # Legacy plaintext fallback
-            elif stored == password:
-                users[username]['password'] = generate_password_hash(password)
-                if not save_users(users):
-                    return jsonify({"success": False, "message": "Error saving data"}), 500
-                session['username'] = username
-                session.permanent = True
-                return jsonify({"success": True})
-            
-            return jsonify({"success": False, "message": "Invalid credentials"}), 401
+                
+                return jsonify({"success": False, "message": "Invalid credentials"}), 401
         except Exception as e:
             print(f"Login error: {e}")
             return jsonify({"success": False, "message": "Server error"}), 500
     
-    return render_template("index.html", logged_in=False, is_signup=False)
+    # Pass Firebase config to template
+    return render_template("index.html", logged_in=False, is_signup=False, firebase_config=FIREBASE_CONFIG)
 
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
@@ -332,64 +494,97 @@ def signup():
             data = request.get_json()
             if not data:
                 return jsonify({"success": False, "message": "Invalid request"}), 400
+            
+            # Firebase authentication - verify ID token from frontend
+            id_token = data.get('idToken')
+            
+            if id_token:
+                # Firebase signup flow (user already created by Firebase Auth on frontend)
+                decoded_token = verify_firebase_token(id_token)
+                if not decoded_token:
+                    return jsonify({"success": False, "message": "Invalid authentication token"}), 401
                 
-            username = data.get('username', '').strip()
-            password = data.get('password', '')
-            email = data.get('email', '').strip().lower()
-            
-            if not username or not password:
-                return jsonify({"success": False, "message": "Username and password required"}), 400
-            
-            if not email:
-                return jsonify({"success": False, "message": "Email is required"}), 400
-            
-            if not validate_email(email):
-                return jsonify({"success": False, "message": "Invalid email format"}), 400
-            
-            users = load_users()
-            
-            if username in users:
-                return jsonify({"success": False, "message": "Username already exists"}), 409
-            
-            # Check if email already exists
-            for user_data in users.values():
-                if user_data.get('email') == email:
-                    return jsonify({"success": False, "message": "Email already registered"}), 409
-            
-            # Generate verification token
-            token = secrets.token_urlsafe(32)
-            VERIFICATION_TOKENS[token] = {
-                'username': username,
-                'email': email,
-                'password': password,
-                'timestamp': os.path.getmtime(USERS_FILE) if os.path.exists(USERS_FILE) else 0
-            }
-            
-            # Send verification email
-            send_verification_email(email, token)
-            
-            # Create user with verified status (auto-verify in dev mode)
-            users[username] = {
-                'password': generate_password_hash(password),
-                'email': email,
-                'verified': True,  # Auto-verify in dev mode
-                'answers': [],
-                'results': []
-            }
-            
-            if not save_users(users):
-                return jsonify({"success": False, "message": "Error saving user data"}), 500
+                uid = decoded_token['uid']
+                email = decoded_token.get('email', '')
                 
-            return jsonify({
-                "success": True, 
-                "message": "Account created! Please check your email to verify your account.",
-                "verification_sent": True
-            })
+                # Create user document in Firestore
+                user_data = {
+                    'email': email,
+                    'answers': [],
+                    'results': [],
+                    'created_at': firestore.SERVER_TIMESTAMP
+                }
+                
+                if create_or_update_user(uid, user_data):
+                    session['user_id'] = uid
+                    session['email'] = email
+                    session.permanent = True
+                    return jsonify({
+                        "success": True,
+                        "message": "Account created successfully!"
+                    })
+                else:
+                    return jsonify({"success": False, "message": "Error creating user profile"}), 500
+            else:
+                # Legacy username/password flow (backward compatibility)
+                username = data.get('username', '').strip()
+                password = data.get('password', '')
+                email = data.get('email', '').strip().lower()
+                
+                if not username or not password:
+                    return jsonify({"success": False, "message": "Username and password required"}), 400
+                
+                if not email:
+                    return jsonify({"success": False, "message": "Email is required"}), 400
+                
+                if not validate_email(email):
+                    return jsonify({"success": False, "message": "Invalid email format"}), 400
+                
+                users = load_users()
+                
+                if username in users:
+                    return jsonify({"success": False, "message": "Username already exists"}), 409
+                
+                # Check if email already exists
+                for user_data in users.values():
+                    if user_data.get('email') == email:
+                        return jsonify({"success": False, "message": "Email already registered"}), 409
+                
+                # Generate verification token
+                token = secrets.token_urlsafe(32)
+                VERIFICATION_TOKENS[token] = {
+                    'username': username,
+                    'email': email,
+                    'password': password,
+                    'timestamp': os.path.getmtime(USERS_FILE) if os.path.exists(USERS_FILE) else 0
+                }
+                
+                # Send verification email
+                send_verification_email(email, token)
+                
+                # Create user with verified status (auto-verify in dev mode)
+                users[username] = {
+                    'password': generate_password_hash(password),
+                    'email': email,
+                    'verified': True,  # Auto-verify in dev mode
+                    'answers': [],
+                    'results': []
+                }
+                
+                if not save_users(users):
+                    return jsonify({"success": False, "message": "Error saving user data"}), 500
+                    
+                return jsonify({
+                    "success": True, 
+                    "message": "Account created! Please check your email to verify your account.",
+                    "verification_sent": True
+                })
         except Exception as e:
             print(f"Signup error: {e}")
             return jsonify({"success": False, "message": "Server error"}), 500
     
-    return render_template("index.html", logged_in=False, is_signup=True)
+    # Pass Firebase config to template
+    return render_template("index.html", logged_in=False, is_signup=True, firebase_config=FIREBASE_CONFIG)
 
 @app.route("/forgot-password", methods=["GET", "POST"])
 def forgot_password():
@@ -520,12 +715,18 @@ def verify_email():
 
 @app.route("/logout")
 def logout():
+    # Clear both Firebase and legacy session data
+    session.pop('user_id', None)
+    session.pop('email', None)
     session.pop('username', None)
     return redirect(url_for('login'))
 
 @app.route("/submit_assessment", methods=["POST"])
 def submit_assessment():
-    if 'username' not in session:
+    user_id = session.get('user_id')
+    username = session.get('username')
+    
+    if not user_id and not username:
         return jsonify({"success": False, "message": "Not logged in"})
     
     data = request.json
@@ -537,28 +738,53 @@ def submit_assessment():
     # Calculate results
     results = calculate_results(answers)
     
-    # Save to user data
-    users = load_users()
-    if session['username'] in users:
-        users[session['username']]['answers'] = answers
-        users[session['username']]['results'] = results
-        save_users(users)
-        
+    # Save to appropriate storage
+    if user_id:
+        # Firebase user - save to Firestore
+        user_ref = db.collection('users').document(user_id)
+        user_ref.update({
+            'answers': answers,
+            'results': results,
+            'updated_at': firestore.SERVER_TIMESTAMP
+        })
         return jsonify({"success": True, "results": results})
+    else:
+        # Legacy user - save to JSON
+        users = load_users()
+        if username in users:
+            users[username]['answers'] = answers
+            users[username]['results'] = results
+            save_users(users)
+            return jsonify({"success": True, "results": results})
     
     return jsonify({"success": False, "message": "User not found"})
 
 @app.route("/reset_assessment", methods=["POST"])
 def reset_assessment():
-    if 'username' not in session:
+    user_id = session.get('user_id')
+    username = session.get('username')
+    
+    if not user_id and not username:
         return jsonify({"success": False, "message": "Not logged in"})
     
-    users = load_users()
-    if session['username'] in users:
-        users[session['username']]['answers'] = []
-        users[session['username']]['results'] = []
-        save_users(users)
+    # Reset in appropriate storage
+    if user_id:
+        # Firebase user - reset in Firestore
+        user_ref = db.collection('users').document(user_id)
+        user_ref.update({
+            'answers': [],
+            'results': [],
+            'updated_at': firestore.SERVER_TIMESTAMP
+        })
         return jsonify({"success": True})
+    else:
+        # Legacy user - reset in JSON
+        users = load_users()
+        if username in users:
+            users[username]['answers'] = []
+            users[username]['results'] = []
+            save_users(users)
+            return jsonify({"success": True})
     
     return jsonify({"success": False, "message": "User not found"})
 

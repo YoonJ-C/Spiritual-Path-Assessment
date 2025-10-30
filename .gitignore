@@ -4,6 +4,11 @@ users_data.json
 # Environment Variables - Contains API Keys
 .env
 
+# Firebase Service Account Key - NEVER COMMIT THIS!
+serviceAccountKey.json
+*serviceAccountKey*.json
+firebase-adminsdk-*.json
+
 # Python Virtual Environment
 .venv/
 venv/
@@ -62,3 +67,4 @@ rag_data/
 *.tmp
 
 docs/
+etc/

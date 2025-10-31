@@ -87,17 +87,11 @@ async function authenticateWithFirebase(email, password, isSignup) {
 // ==================== AUTHENTICATION ====================
 
 async function authenticate() {
-    const username = document.getElementById('authUsername').value.trim();
+    const email = document.getElementById('authEmail').value.trim();
+    const username = document.getElementById('authUsername') ? document.getElementById('authUsername').value.trim() : '';
     const password = document.getElementById('authPassword').value;
-    const email = document.getElementById('authEmail') ? document.getElementById('authEmail').value.trim() : '';
     
-    if (!username || !password) {
-        document.getElementById('result').innerHTML = 
-            '<p class="error-msg">⚠️ Please fill in all fields</p>';
-        return;
-    }
-    
-    if (window.location.pathname === '/signup' && !email) {
+    if (!email || !password) {
         document.getElementById('result').innerHTML = 
             '<p class="error-msg">⚠️ Please fill in all fields</p>';
         return;
@@ -106,8 +100,8 @@ async function authenticate() {
     const isSignup = window.location.pathname === '/signup';
     const endpoint = isSignup ? '/signup' : '/login';
     
-    // Try Firebase authentication first if available and email is provided
-    if (window.firebaseEnabled && email) {
+    // Try Firebase authentication first if available
+    if (window.firebaseEnabled) {
         try {
             const idToken = await authenticateWithFirebase(email, password, isSignup);
             
@@ -139,11 +133,13 @@ async function authenticate() {
             return;
         } catch (error) {
             console.error('Firebase auth error:', error);
-            // Fall through to legacy auth
+            document.getElementById('result').innerHTML = 
+                `<p class="error-msg">${error.message || 'Authentication failed'}</p>`;
+            return;
         }
     }
     
-    // Legacy authentication (username/password)
+    // Legacy authentication fallback (if Firebase is disabled)
     const body = isSignup 
         ? {username, password, email} 
         : {username, password};

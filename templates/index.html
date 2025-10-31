@@ -81,11 +81,20 @@
                 </div>
                 {% endif %}
                 
+                <!-- Around line 84-88 -->
+                {% if firebase_config and firebase_config.apiKey %}
+                <input type="email" id="authEmail" placeholder="Email">
+                {% else %}
                 <input type="text" id="authUsername" placeholder="User name">
+                {% endif %}
+                {% if is_signup and firebase_config and firebase_config.apiKey %}
+                <input type="text" id="authUsername" placeholder="Display Name (optional)">
+                {% elif not firebase_config or not firebase_config.apiKey %}
                 {% if is_signup %}
                 <input type="email" id="authEmail" placeholder="Email">
                 {% endif %}
-                <input type="password" id="authPassword" placeholder="Password">
+                {% endif %} 
+                
                 <button onclick="authenticate()">{{ 'Sign Up' if is_signup else 'Sign In' }}</button>
                 <div id="result"></div>
                 {% if not is_signup %}

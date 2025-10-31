@@ -15,9 +15,24 @@ async function signInWithGoogle() {
     
     const provider = new firebase.auth.GoogleAuthProvider();
     
+    // Configure provider for better popup behavior
+    provider.setCustomParameters({
+        prompt: 'select_account'  // Always show account selection
+    });
+    
     try {
+        // Show loading state
+        const resultDiv = document.getElementById('result');
+        if (resultDiv) {
+            resultDiv.innerHTML = '<p style="color: #666;">Opening sign-in window...</p>';
+        }
+        
         const result = await window.firebaseAuth.signInWithPopup(provider);
         const user = result.user;
+        
+        if (resultDiv) {
+            resultDiv.innerHTML = '<p style="color: #666;">Signing in...</p>';
+        }
         
         // Get ID token to send to backend
         const idToken = await user.getIdToken();
@@ -41,8 +56,32 @@ async function signInWithGoogle() {
         }
     } catch (error) {
         console.error('Google Sign-In Error:', error);
-        document.getElementById('result').innerHTML = 
-            `<p class="error-msg">⚠️ ${error.message || 'Google Sign-In failed'}</p>`;
+        console.error('Error code:', error.code);
+        console.error('Error details:', error);
+        
+        const resultDiv = document.getElementById('result');
+        let errorMsg = '';
+        
+        // Handle specific error cases
+        if (error.code === 'auth/popup-closed-by-user') {
+            errorMsg = '❌ Sign-in window was closed. Please try again and complete the sign-in process.';
+        } else if (error.code === 'auth/popup-blocked') {
+            errorMsg = '❌ Pop-up was blocked by your browser. Please allow pop-ups for this site and try again.';
+        } else if (error.code === 'auth/cancelled-popup-request') {
+            errorMsg = '❌ Another sign-in is in progress. Please wait a moment and try again.';
+        } else if (error.code === 'auth/unauthorized-domain') {
+            errorMsg = '❌ This domain is not authorized for Google Sign-In. Please contact the administrator.';
+        } else if (error.code === 'auth/operation-not-allowed') {
+            errorMsg = '❌ Google Sign-In is not enabled. Please contact the administrator.';
+        } else if (error.code === 'auth/network-request-failed') {
+            errorMsg = '❌ Network error. Please check your internet connection and try again.';
+        } else {
+            errorMsg = `❌ ${error.message || 'Google Sign-In failed. Please try again.'}`;
+        }
+        
+        if (resultDiv) {
+            resultDiv.innerHTML = `<p class="error-msg">${errorMsg}</p>`;
+        }
     }
 }
 

@@ -69,94 +69,234 @@ openai_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 # Load detailed religion data at startup
 RELIGIONS_CSV = load_religions_from_csv('religions.csv')
 
-# Assessment Questions
+
+# Aliases map inconsistent keys to canonical ones
+TRADITION_ALIASES = {
+    "secular": "humanism",
+    "secularism": "humanism",
+    "spiritualism": "spiritual_not_religious",
+    "wicca": "paganism",
+    "zen": "buddhism",
+    "pantheism": "paganism",
+    "unitarian": "spiritual_not_religious",
+    "deism": "agnosticism"
+}
+
+def canon(key):
+    """Normalize tradition key to canonical form"""
+    return TRADITION_ALIASES.get(key, key)
+
+# Question importance weights (higher = more significant)
+QUESTION_WEIGHTS = {
+    1: 5,  # Nature of the divine (most fundamental)
+    2: 3,  # Spiritual connection style
+    3: 4,  # Afterlife beliefs
+    4: 4,  # Moral/ethical foundation
+    5: 3,  # Prayer practices
+    6: 3,  # Ritual/practice style
+    7: 3,  # Human-nature relationship
+    8: 3,  # View on suffering
+    9: 2   # Community importance
+}
+
+# Assessment Questions ----------------------------
 QUESTIONS = [
     {
         "id": 1,
         "question": "What is your view on the nature of the divine?",
         "options": {
-            "One supreme God who created everything": {"christianity": 3, "islam": 3, "judaism": 3},
-            "Multiple gods and goddesses": {"hinduism": 3, "paganism": 3},
-            "A universal energy or force": {"buddhism": 2, "taoism": 3, "new_age": 3},
-            "No divine being, focus on human potential": {"humanism": 3, "atheism": 3},
-            "Uncertain or unknowable": {"agnosticism": 3}
+            "One supreme God who created everything": {
+                "christianity": 5, "islam": 5, "judaism": 5, "sikhism": 4
+            },
+            "Multiple gods and goddesses": {
+                "hinduism": 5, "paganism": 5, "shintoism": 3
+            },
+            "A universal energy or force": {
+                "taoism": 5, "buddhism": 4, "new_age": 4, "spiritual_not_religious": 3
+            },
+            "No divine being, focus on human potential": {
+                "humanism": 5, "atheism": 5, "stoicism": 3, "confucianism": 2
+            },
+            "Uncertain or unknowable": {
+                "agnosticism": 5, "spiritual_not_religious": 2
+            }
         }
     },
     {
         "id": 2,
         "question": "How do you prefer to connect with spirituality?",
         "options": {
-            "Through organized worship and community": {"christianity": 2, "islam": 2, "judaism": 2},
-            "Through personal meditation and reflection": {"buddhism": 3, "hinduism": 2, "taoism": 2},
-            "Through nature and natural cycles": {"paganism": 3, "indigenous": 3},
-            "Through reason and philosophy": {"humanism": 2, "stoicism": 3},
-            "I don't feel the need for spiritual connection": {"atheism": 3}
+            "Through organized worship and community": {
+                "christianity": 4, "islam": 4, "judaism": 4, "sikhism": 3
+            },
+            "Through personal meditation and reflection": {
+                "buddhism": 5, "hinduism": 4, "taoism": 4, "jainism": 4
+            },
+            "Through nature and natural cycles": {
+                "paganism": 5, "indigenous": 5, "shintoism": 4
+            },
+            "Through reason and philosophy": {
+                "stoicism": 5, "humanism": 4, "confucianism": 3
+            },
+            "I don't feel the need for spiritual connection": {
+                "atheism": 5, "humanism": 2
+            }
         }
     },
     {
         "id": 3,
         "question": "What is your belief about the afterlife?",
         "options": {
-            "Heaven or Hell based on faith/deeds": {"christianity": 3, "islam": 3},
-            "Reincarnation until enlightenment": {"hinduism": 3, "buddhism": 3},
-            "Ancestral realm or spiritual world": {"indigenous": 2, "paganism": 2},
-            "No afterlife, this life is all there is": {"atheism": 3, "humanism": 2},
-            "Unsure or open to possibilities": {"agnosticism": 2, "new_age": 2}
+            "Heaven or Hell based on faith/deeds": {
+                "christianity": 5, "islam": 5, "judaism": 3
+            },
+            "Reincarnation until enlightenment": {
+                "hinduism": 5, "buddhism": 5, "jainism": 4, "sikhism": 3
+            },
+            "Ancestral realm or spiritual world": {
+                "indigenous": 4, "paganism": 3, "shintoism": 3, "confucianism": 2
+            },
+            "No afterlife, this life is all there is": {
+                "atheism": 5, "humanism": 4, "stoicism": 2
+            },
+            "Unsure or open to possibilities": {
+                "agnosticism": 4, "new_age": 3, "spiritual_not_religious": 3
+            }
         }
     },
     {
         "id": 4,
         "question": "What guides your moral and ethical decisions?",
         "options": {
-            "Sacred texts and religious teachings": {"christianity": 3, "islam": 3, "judaism": 3},
-            "Universal principles of compassion and mindfulness": {"buddhism": 3, "jainism": 3},
-            "Harmony with nature and balance": {"taoism": 3, "indigenous": 2},
-            "Reason, empathy, and human rights": {"humanism": 3, "secularism": 3},
-            "Personal intuition and inner wisdom": {"new_age": 2, "spiritualism": 3}
+            "Sacred texts and religious teachings": {
+                "islam": 5, "christianity": 5, "judaism": 5, "sikhism": 3
+            },
+            "Universal principles of compassion and mindfulness": {
+                "buddhism": 5, "jainism": 5, "hinduism": 3
+            },
+            "Harmony with nature and balance": {
+                "taoism": 5, "indigenous": 4, "shintoism": 3, "paganism": 3
+            },
+            "Reason, empathy, and human rights": {
+                "humanism": 5, "atheism": 3, "stoicism": 3
+            },
+            "Personal intuition and inner wisdom": {
+                "spiritual_not_religious": 5, "new_age": 4
+            },
+            "Virtue, duty, and social harmony": {
+                "confucianism": 5, "stoicism": 4
+            }
         }
     },
     {
         "id": 5,
-        "question": "What role does ritual or practice play in your life?",
+        "question": "How do you approach prayer or meditation?",
         "options": {
-            "Regular prayer and worship are essential": {"islam": 3, "christianity": 2, "judaism": 2},
-            "Daily meditation or mindfulness practice": {"buddhism": 3, "hinduism": 2, "zen": 3},
-            "Seasonal celebrations and ceremonies": {"paganism": 3, "wicca": 3},
-            "Minimal to no ritual, prefer intellectual engagement": {"humanism": 2, "deism": 2},
-            "Flexible, whatever feels meaningful to me": {"new_age": 2, "spiritual_not_religious": 3}
+            "Structured daily prayers at set times (e.g., 5 times daily)": {
+                "islam": 5, "sikhism": 3
+            },
+            "Regular personal prayer and church attendance": {
+                "christianity": 5, "judaism": 4
+            },
+            "Daily meditation or mindfulness practice": {
+                "buddhism": 5, "hinduism": 4, "jainism": 4
+            },
+            "Occasional prayer or reflection when needed": {
+                "christianity": 2, "judaism": 2, "spiritual_not_religious": 3, "new_age": 2
+            },
+            "Meditation for inner peace, not religious practice": {
+                "stoicism": 3, "humanism": 2, "buddhism": 2
+            },
+            "I don't pray or meditate": {
+                "atheism": 4, "humanism": 3
+            }
         }
     },
     {
         "id": 6,
-        "question": "How do you view the relationship between humans and nature?",
+        "question": "What role do rituals and ceremonies play in your life?",
         "options": {
-            "Humans are stewards of God's creation": {"christianity": 2, "islam": 2, "judaism": 2},
-            "All life is interconnected and sacred": {"buddhism": 2, "hinduism": 2, "jainism": 3},
-            "Nature itself is divine": {"paganism": 3, "pantheism": 3, "indigenous": 3},
-            "Nature follows natural laws we can understand": {"atheism": 2, "humanism": 2},
-            "We should live in harmony with natural flow": {"taoism": 3, "shintoism": 2}
+            "Essential - weekly services and holy day observances": {
+                "christianity": 4, "islam": 4, "judaism": 5, "hinduism": 3
+            },
+            "Important - seasonal celebrations and nature rituals": {
+                "paganism": 5, "indigenous": 5, "shintoism": 4
+            },
+            "Helpful - personal rituals that feel meaningful": {
+                "new_age": 4, "spiritual_not_religious": 4, "hinduism": 2
+            },
+            "Minimal - prefer contemplation and philosophy": {
+                "stoicism": 4, "humanism": 3, "confucianism": 2, "agnosticism": 2
+            },
+            "None - I don't practice rituals": {
+                "atheism": 4, "humanism": 2
+            }
         }
     },
     {
         "id": 7,
-        "question": "What is your view on suffering and its purpose?",
+        "question": "How do you view the relationship between humans and nature?",
         "options": {
-            "A test of faith or part of God's plan": {"christianity": 2, "islam": 2},
-            "Result of attachment and desire": {"buddhism": 3, "stoicism": 2},
-            "Karma from past actions": {"hinduism": 3, "sikhism": 2},
-            "Random or result of natural causes": {"atheism": 3, "secular": 2},
-            "An opportunity for growth and learning": {"new_age": 2, "spiritualism": 2}
+            "Humans are stewards of God's creation": {
+                "christianity": 4, "islam": 4, "judaism": 4
+            },
+            "All life is interconnected and sacred": {
+                "buddhism": 5, "hinduism": 4, "jainism": 5, "indigenous": 4
+            },
+            "Nature itself is divine and should be revered": {
+                "paganism": 5, "indigenous": 4, "shintoism": 5, "taoism": 3
+            },
+            "Nature follows natural laws we can study": {
+                "atheism": 4, "humanism": 4, "stoicism": 2
+            },
+            "We should live in harmony with natural flow": {
+                "taoism": 5, "buddhism": 3, "shintoism": 3, "indigenous": 3
+            }
         }
     },
     {
         "id": 8,
+        "question": "What is your view on suffering and its purpose?",
+        "options": {
+            "A test of faith or part of God's plan": {
+                "christianity": 4, "islam": 4, "judaism": 3
+            },
+            "Result of attachment, desire, and ignorance": {
+                "buddhism": 5, "stoicism": 3, "jainism": 3
+            },
+            "Karma from past actions and choices": {
+                "hinduism": 5, "sikhism": 4, "buddhism": 3, "jainism": 3
+            },
+            "Natural part of life without cosmic meaning": {
+                "atheism": 5, "humanism": 3, "stoicism": 2
+            },
+            "An opportunity for spiritual growth": {
+                "new_age": 4, "spiritual_not_religious": 3, "christianity": 2
+            },
+            "To be accepted with virtue and equanimity": {
+                "stoicism": 5, "buddhism": 2, "confucianism": 2
+            }
+        }
+    },
+    {
+        "id": 9,
         "question": "How important is community in your spiritual life?",
         "options": {
-            "Very important, prefer group worship": {"christianity": 2, "islam": 2, "sikhism": 3},
-            "Somewhat important, but personal practice matters more": {"buddhism": 2, "hinduism": 2},
-            "Community of like-minded seekers": {"paganism": 2, "unitarian": 3},
-            "Not important, spirituality is personal": {"spiritual_not_religious": 3, "deism": 2},
-            "Prefer secular community over religious": {"humanism": 2, "atheism": 2}
+            "Very important - prefer group worship and fellowship": {
+                "christianity": 4, "islam": 4, "sikhism": 5, "judaism": 4
+            },
+            "Somewhat important - personal practice matters more": {
+                "buddhism": 3, "hinduism": 3, "taoism": 2
+            },
+            "Community of like-minded spiritual seekers": {
+                "paganism": 4, "spiritual_not_religious": 4, "new_age": 3
+            },
+            "Not important - spirituality is deeply personal": {
+                "spiritual_not_religious": 3, "agnosticism": 3, "taoism": 2
+            },
+            "Prefer secular community over religious": {
+                "humanism": 4, "atheism": 4, "stoicism": 2
+            }
         }
     }
 ]
@@ -176,50 +316,13 @@ RELIGIONS = {
     "new_age": {"name": "New Age Spirituality", "description": "Eclectic approach emphasizing personal growth.", "practices": "Meditation, energy work, crystals, yoga", "core_beliefs": "Personal transformation, universal consciousness"},
     "spiritual_not_religious": {"name": "Spiritual But Not Religious", "description": "Personal spirituality without organized religion.", "practices": "Personal practices, meditation, self-reflection", "core_beliefs": "Individual journey, authenticity, diverse wisdom"},
     "sikhism": {"name": "Sikhism", "description": "One God emphasizing service, equality, and meditation.", "practices": "Prayer, meditation, community service, 5 Ks", "core_beliefs": "One God, equality, honest living, sharing"},
-    "indigenous": {"name": "Indigenous Spirituality", "description": "Traditional practices honoring ancestors and land.", "practices": "Ceremonies, storytelling, seasonal rituals", "core_beliefs": "Land connection, ancestor veneration, reciprocity"}
+    "indigenous": {"name": "Indigenous Spirituality", "description": "Traditional practices honoring ancestors and land.", "practices": "Ceremonies, storytelling, seasonal rituals", "core_beliefs": "Land connection, ancestor veneration, reciprocity"},
+    "jainism": {"name": "Jainism", "description": "Ancient path emphasizing non-violence and spiritual purification.", "practices": "Meditation, fasting, non-violence, self-discipline", "core_beliefs": "Ahimsa (non-violence), karma liberation, asceticism"},
+    "shintoism": {"name": "Shinto", "description": "Japanese tradition honoring kami spirits and natural harmony.", "practices": "Shrine visits, purification rituals, festivals", "core_beliefs": "Kami reverence, purity, harmony with nature"},
+    "stoicism": {"name": "Stoicism", "description": "Philosophy emphasizing virtue, reason, and acceptance of fate.", "practices": "Contemplation, virtue practice, rational thinking", "core_beliefs": "Virtue, reason, acceptance, inner peace"},
+    "confucianism": {"name": "Confucianism", "description": "Philosophy emphasizing moral cultivation and social harmony.", "practices": "Ritual propriety, study, self-cultivation", "core_beliefs": "Filial piety, benevolence, social harmony"}
 }
 
-# Email verification tokens (in-memory for simplicity)
-VERIFICATION_TOKENS = {}
-
-def validate_email(email):
-    """Basic email validation"""
-    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-    return re.match(pattern, email) is not None
-
-def send_verification_email(email, token):
-    """Send verification email (dev mode: prints to console)"""
-    verification_url = f"{request.host_url}verify-email?token={token}"
-    message = f"""
-    Hello!
-    
-    Please verify your email by clicking this link:
-    {verification_url}
-    
-    Or visit: {request.host_url}verify-email?token={token}
-    """
-    print(f"[EMAIL] To: {email}")
-    print(f"[EMAIL] Subject: Verify your email")
-    print(f"[EMAIL] Body:\n{message}")
-    # In production, replace with actual SMTP sending
-    return True
-
-def send_password_reset_email(email, token):
-    """Send password reset email (dev mode: prints to console)"""
-    reset_url = f"{request.host_url}reset-password?token={token}"
-    message = f"""
-    Hello!
-    
-    You requested a password reset. Click this link:
-    {reset_url}
-    
-    Or visit: {request.host_url}reset-password?token={token}
-    """
-    print(f"[EMAIL] To: {email}")
-    print(f"[EMAIL] Subject: Password Reset Request")
-    print(f"[EMAIL] Body:\n{message}")
-    # In production, replace with actual SMTP sending
-    return True
 
 # ============================================================================
 # FIRESTORE HELPER FUNCTIONS
@@ -251,51 +354,7 @@ def create_or_update_user(uid, user_data):
         print(f"Error saving user {uid}: {e}")
         return False
 
-def get_user_answers(uid):
-    """Get user's assessment answers from Firestore"""
-    if not db:
-        return []
-    try:
-        user_data = get_user_by_uid(uid)
-        return user_data.get('answers', []) if user_data else []
-    except Exception as e:
-        print(f"Error getting answers for {uid}: {e}")
-        return []
 
-def save_user_answers(uid, answers):
-    """Save user's assessment answers to Firestore"""
-    if not db:
-        return False
-    try:
-        user_ref = db.collection('users').document(uid)
-        user_ref.update({'answers': answers})
-        return True
-    except Exception as e:
-        print(f"Error saving answers for {uid}: {e}")
-        return False
-
-def get_user_results(uid):
-    """Get user's assessment results from Firestore"""
-    if not db:
-        return []
-    try:
-        user_data = get_user_by_uid(uid)
-        return user_data.get('results', []) if user_data else []
-    except Exception as e:
-        print(f"Error getting results for {uid}: {e}")
-        return []
-
-def save_user_results(uid, results):
-    """Save user's assessment results to Firestore"""
-    if not db:
-        return False
-    try:
-        user_ref = db.collection('users').document(uid)
-        user_ref.update({'results': results})
-        return True
-    except Exception as e:
-        print(f"Error saving results for {uid}: {e}")
-        return False
 
 def verify_firebase_token(id_token):
     """Verify Firebase ID token and return decoded token"""
@@ -346,27 +405,76 @@ def initialize_default_user():
         print("✅ Default test user created (username: test, password: test)")
 
 def calculate_results(answers):
-    """Calculate which spiritual paths align with user's answers"""
+    """
+    Calculate which spiritual paths align with user's answers
+    Uses weighted scoring with canonical tradition keys and tie-breakers
+    """
     scores = {}
+    coverage = {}  # Track number of questions contributing to each tradition (for tie-breaking)
     
+    # Calculate weighted scores
     for answer in answers:
         question = next((q for q in QUESTIONS if q["id"] == answer["question_id"]), None)
         if question and answer["answer"] in question["options"]:
-            points = question["options"][answer["answer"]]
-            for religion, score in points.items():
-                scores[religion] = scores.get(religion, 0) + score
+            points_map = question["options"][answer["answer"]]
+            question_weight = QUESTION_WEIGHTS.get(answer["question_id"], 1)
+            
+            # Track which traditions are scored in this question (for tie-breaker)
+            touched_this_question = set()
+            
+            for tradition_key, base_points in points_map.items():
+                # Normalize tradition key to canonical form
+                canonical_key = canon(tradition_key)
+                
+                # Calculate weighted score
+                weighted_score = base_points * question_weight
+                scores[canonical_key] = scores.get(canonical_key, 0) + weighted_score
+                touched_this_question.add(canonical_key)
+            
+            # Update coverage count for tie-breaking
+            for key in touched_this_question:
+                coverage[key] = coverage.get(key, 0) + 1
     
-    # Sort by score
-    sorted_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+    # Calculate maximum possible score for percentage calculation
+    max_possible_score = 0
+    for answer in answers:
+        question = next((q for q in QUESTIONS if q["id"] == answer["question_id"]), None)
+        if question:
+            # Find the highest point value among all options for this question
+            max_option_points = 0
+            for option_scores in question["options"].values():
+                if option_scores:
+                    max_option_points = max(max_option_points, max(option_scores.values()))
+            
+            question_weight = QUESTION_WEIGHTS.get(answer["question_id"], 1)
+            max_possible_score += max_option_points * question_weight
     
-    # Get top 3 recommendations
+    # Sort by score (primary) and coverage (tie-breaker)
+    # Higher coverage means the tradition was scored across more questions
+    sorted_scores = sorted(
+        scores.items(),
+        key=lambda x: (x[1], coverage.get(x[0], 0)),
+        reverse=True
+    )
+    
+    # Build top 3 recommendations
     recommendations = []
-    for religion_key, score in sorted_scores[:3]:
-        if religion_key in RELIGIONS:
-            religion_info = RELIGIONS[religion_key].copy()
-            religion_info["score"] = score
-            religion_info["percentage"] = round((score / (len(answers) * 3)) * 100)
-            recommendations.append(religion_info)
+    for tradition_key, score in sorted_scores:
+        if tradition_key in RELIGIONS:
+            tradition_info = RELIGIONS[tradition_key].copy()
+            tradition_info["score"] = score
+            
+            # Calculate percentage based on actual max possible
+            if max_possible_score > 0:
+                tradition_info["percentage"] = round((score / max_possible_score) * 100)
+            else:
+                tradition_info["percentage"] = 0
+            
+            recommendations.append(tradition_info)
+            
+            # Stop after top 3
+            if len(recommendations) == 3:
+                break
     
     return recommendations
 
@@ -719,7 +827,7 @@ def logout():
     session.pop('user_id', None)
     session.pop('email', None)
     session.pop('username', None)
-    return redirect(url_for('login'))
+    return redirect(url_for('landing'))
 
 @app.route("/submit_assessment", methods=["POST"])
 def submit_assessment():
@@ -794,7 +902,7 @@ def chat():
     RAG-enhanced chat endpoint for spiritual guidance
     Uses retrieval-augmented generation with religion-specific context
     """
-    if 'username' not in session:
+    if 'user_id' not in session and 'username' not in session:
         return jsonify({"success": False, "message": "Not logged in"})
     
     if not client:

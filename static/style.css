@@ -411,7 +411,7 @@ button:disabled {
 /* ===== RESULTS ===== */
 .results-explanation {
     max-width: 400px; /* Adjust this value as needed */
-    margin: 0 auto var(--space-lg);
+    margin: 0 auto var(--space-sm);
     text-align: center;
     color: var(--text-secondary);
     font-size: var(--font-size-sm);

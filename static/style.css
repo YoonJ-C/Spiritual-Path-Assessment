@@ -572,7 +572,7 @@ button:disabled {
     height: 250px;
     overflow-y: auto;
     padding: var(--space-sm);
-    background: transparent;
+    background: var(--bg-white);
 }
 
 .chat-message {
@@ -611,18 +611,20 @@ button:disabled {
 
 .chat-input-area {
     display: flex;
-    gap: var(--space-xs);
+    align-items: center;
+    gap: 0; /* Remove gap since voice button is absolutely positioned */
     padding: var(--space-sm);
     background: transparent;
     border-top: none;
+    position: relative;
 }
 
 .chat-input {
     flex: 1;
-    padding: var(--space-sm) var(--space-sm);
+    padding: var(--space-sm); /* Reduced right padding for better spacing */
     border: none;
     background: var(--bg-white);
-    border-radius: var(--radius-sm);
+    border-radius: 999px;
     font-size: var(--font-size-sm);
     outline: none;
     color: var(--text-primary);
@@ -633,16 +635,34 @@ button:disabled {
     box-shadow: var(--shadow-md);
 }
 
+/* Removed the plus icon ::before pseudo-element */
+
 .chat-send-btn {
-    padding: var(--space-sm) var(--space-lg);
+    padding: 0;
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    margin-left: var(--space-xs); /* Add margin instead of gap */
     background: var(--primary-dark);
     color: var(--text-inverse);
     border: none;
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-full);
     cursor: pointer;
     font-weight: var(--font-weight-medium);
     font-size: var(--font-size-sm);
     transition: background var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.chat-send-btn::after {
+    content: '↑';
+    font-size: var(--font-size-base);
+    line-height: 1;
+    font-weight: var(--font-weight-bold); /* Make arrow thicker */
+    -webkit-text-stroke: 0.5px; /* Additional thickness */
 }
 
 .chat-send-btn:hover {
@@ -656,22 +676,31 @@ button:disabled {
 }
 
 .voice-btn {
-    padding: var(--space-sm) var(--space-sm);
-    background: var(--primary-dark);
-    color: var(--text-inverse);
+    padding: 0;
+    width: auto;
+    height: auto;
+    background: transparent; /* Transparent to sit inside input visually */
+    color: var(--text-primary); /* Match input text color */
     border: none;
     border-radius: var(--radius-sm);
     cursor: pointer;
     font-size: var(--font-size-lg);
     transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    right: calc(16px + var(--space-xs) + var(--space-sm)); /* Position to left of send button */
 }
 
 .voice-btn:hover {
-    background: var(--info);
+    background: transparent;
+    color: var(--text-primary);
+    opacity: 0.7;
 }
 
 .voice-btn.recording {
-    background: var(--error);
+    color: var(--error);
     animation: pulse 1s infinite;
 }
 

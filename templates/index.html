@@ -76,12 +76,15 @@
                     Continue with Google
                 </button>
                 
-                <div class="divider">
+
+                 <!-- Hide email/password sign-in temporarily -------------------------------------->
+                
+                
+                 <!-- <div class="divider">
                     <span>or</span>
                 </div>
-                {% endif %}
-                
-                <!-- Around line 84-88 -->
+                {% endif %} 
+              
                 {% if firebase_config and firebase_config.apiKey %}
                 <input type="email" id="authEmail" placeholder="Email">
                 {% else %}
@@ -105,6 +108,9 @@
                 <p class="switch-link" onclick="switchAuth()">
                     {{ 'Already have an account? Sign In' if is_signup else 'New here? Sign Up' }}
                 </p>
+                </div>
+            
+                
                 {% else %}
                 {% if show_reset_form %}
                 <input type="password" id="resetPassword" placeholder="New Password">
@@ -119,10 +125,12 @@
                 <p class="switch-link" onclick="window.location.href='/login'">
                     Back to Sign In
                 </p>
-                {% endif %}
+                {% endif %} -->
             </div>
         {% else %}
-            <!-- Assessment Interface -->
+
+
+            <!-- Assessment Interface ------------------------------------------------------------>
             <h2>{{ title }}</h2>
             <p>{{ message }} <i class="fas fa-heart"></i> </p>
             
@@ -216,7 +224,7 @@
                                 <input type="text" 
                                        class="chat-input" 
                                        id="input-{{ result.name|replace(' ', '-') }}"
-                                       placeholder="Ask about {{ result.name }}..."
+                                       placeholder="Ask anything"
                                        onkeypress="if(event.key==='Enter') sendMessage('{{ result.name }}')">
                                 <button class="voice-btn" 
                                         id="voice-{{ result.name|replace(' ', '-') }}"
@@ -229,8 +237,8 @@
                                 </button>
                                 <button class="chat-send-btn" 
                                         id="send-{{ result.name|replace(' ', '-') }}"
-                                        onclick="sendMessage('{{ result.name }}')">
-                                    Send
+                                        onclick="sendMessage('{{ result.name }}')"
+                                        title="Send">
                                 </button>
                             </div>
                         </div>

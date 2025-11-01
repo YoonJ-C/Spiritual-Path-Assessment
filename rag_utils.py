@@ -8,7 +8,7 @@ def load_religions_from_csv(csv_path):
         with open(csv_path, 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
             for row in reader:
-                religions[row['key']] = row
+                religions[row['religion']] = row
         print(f"✅ Loaded {len(religions)} religions from CSV")
         return religions
     except Exception as e:

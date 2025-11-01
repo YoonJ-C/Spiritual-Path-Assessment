@@ -8,8 +8,10 @@ function sanitizeReligionName(name) {
 // Google Sign-In with Firebase
 async function signInWithGoogle() {
     if (!window.firebaseEnabled || !window.firebaseAuth) {
-        document.getElementById('result').innerHTML = 
-            '<p class="error-msg">⚠️ Firebase not configured</p>';
+        const resultDiv = document.getElementById('result');
+        if (resultDiv) {
+            resultDiv.innerHTML = '<p class="error-msg">⚠️ Firebase not configured</p>';
+        }
         return;
     }
     
@@ -51,8 +53,10 @@ async function signInWithGoogle() {
         if (data.success) {
             window.location.href = '/assessment';
         } else {
-            document.getElementById('result').innerHTML = 
-                `<p class="error-msg">${data.message || 'Authentication failed'}</p>`;
+            const resultDiv = document.getElementById('result');
+            if (resultDiv) {
+                resultDiv.innerHTML = `<p class="error-msg">${data.message || 'Authentication failed'}</p>`;
+            }
         }
     } catch (error) {
         console.error('Google Sign-In Error:', error);
